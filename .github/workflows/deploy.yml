@@ -1,0 +1,46 @@
+# Workflow para desplegar automáticamente a GitHub Pages
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+# Permisos necesarios para el despliegue
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      - name: Configurar Node.js 📦
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: './baconfort-react/package-lock.json'
+
+      - name: Instalar dependencias 🔧
+        run: |
+          cd baconfort-react
+          npm ci
+
+      - name: Construir el proyecto 🏗️
+        run: |
+          cd baconfort-react
+          npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Desplegar a GitHub Pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: baconfort-react/dist
+          branch: gh-pages
+          clean: true
