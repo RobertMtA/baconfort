@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'El email es obligatorio'],
-    // Quitamos unique: true para evitar índice duplicado, ya que lo definimos explícitamente abajo
+    unique: true,
     lowercase: true,
     trim: true,
     validate: [validator.isEmail, 'Formato de email inválido']
@@ -116,9 +116,8 @@ userSchema.methods.toPublic = function() {
   return userObject;
 };
 
-// Eliminar índice duplicado y crear uno solo explícito
-// Esto resuelve la advertencia: "Duplicate schema index on {"email":1} found"
-userSchema.index({ email: 1 }, { unique: true, background: true });
+// NOTA: No necesitamos definir un índice explícito aquí
+// ya que el campo email ya tiene la propiedad unique:true en su definición de esquema
 
 // Virtual para reviews del usuario
 userSchema.virtual('reviews', {
