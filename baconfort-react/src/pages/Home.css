@@ -1,0 +1,212 @@
+/* Home.css */
+
+/* Estilos generales */
+.home {
+  font-family: 'Montserrat', 'Segoe UI', sans-serif;
+  color: #333;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  line-height: 1.6;
+}
+
+/* Títulos */
+.home h1 {
+  font-size: 2.5rem;
+  text-align: center;
+  margin: 2rem 0 1rem;
+  color: #2c3e50;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3498db, #2c3e50);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.home h2 {
+  font-size: 1.8rem;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: #3498db;
+  font-weight: 600;
+}
+
+.location-title {
+  font-size: 2rem;
+  margin: 3rem 0 2rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.location-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 3px;
+  background: linear-gradient(to right, #3498db, #2ecc71);
+}
+
+/* Textos */
+.home p {
+  font-size: 1.1rem;
+  text-align: center;
+  margin: 1rem auto;
+  max-width: 800px;
+  color: #555;
+}
+
+.highlight-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #e74c3c;
+  text-align: center;
+  margin: 2rem auto;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border-left: 4px solid #e74c3c;
+  max-width: 800px;
+}
+
+/* Líneas separadoras */
+hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #3498db, transparent);
+  margin: 2rem auto;
+  max-width: 800px;
+}
+
+/* Grid de departamentos */
+.departamentos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+/* Sección de ubicaciones */
+#ubicacion {
+  background-color: #f8f9fa;
+  padding: 4rem 0;
+  margin-top: 3rem;
+}
+
+#ubicacion h2 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: #2c3e50;
+}
+
+.location-title-icon {
+  color: #e74c3c;
+  margin-right: 10px;
+}
+
+.location-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+}
+
+.location-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.location-card h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.location-icon {
+  color: #3498db;
+  margin-right: 8px;
+}
+
+.location-card p {
+  text-align: left;
+  margin: 0.8rem 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+.location-card i {
+  width: 20px;
+  color: #3498db;
+  margin-right: 8px;
+}
+
+.btn-primary {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #2980b9;
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+  .home {
+    padding: 1.5rem;
+  }
+  
+  .home h1 {
+    font-size: 2rem;
+  }
+  
+  .home h2 {
+    font-size: 1.5rem;
+  }
+  
+  .departamentos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .home h1 {
+    font-size: 1.8rem;
+  }
+  
+  .home p {
+    font-size: 1rem;
+  }
+  
+  .highlight-text {
+    font-size: 1.1rem;
+  }
+  
+  .location-card {
+    padding: 1.2rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .home {
+    padding: 1rem;
+  }
+  
+  .departamentos-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .location-title {
+    font-size: 1.6rem;
+  }
+}

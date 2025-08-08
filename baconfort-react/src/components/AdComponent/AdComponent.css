@@ -1,0 +1,37 @@
+.ad-container {
+  width: 100%;
+  margin: 1rem auto;
+  min-height: 280px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+}
+
+.adsbygoogle {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 280px;
+}
+
+/* Posiciones específicas */
+.ad-top {
+  margin-top: 0;
+}
+
+.ad-bottom {
+  margin-bottom: 0;
+}
+
+.ad-inline {
+  margin: 2rem auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ad-container {
+    padding: 0 1rem;
+  }
+}

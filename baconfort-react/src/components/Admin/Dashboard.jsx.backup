@@ -1,0 +1,404 @@
+import { useState, useEffect } from 'react';
+import { useAdmin } from '../../context/AdminContext-STATEFUL';
+import AdminCalendar from './AdminCalendar';
+import OccupancySummary from './OccupancySummary';
+import './Dashboard.css';
+
+function Dashboard({ onEditProperty }) {
+  const { getAllProperties, updateProperty, deleteProperty } = useAdmin();
+  const properties = getAllProperties();
+  const propertyList = Object.values(properties);
+  const [activeSection, setActiveSection] = useState('overview'); // Estado para controlar qué sección mostrar
+
+  // Dashboard inicializado
+
+  // NO cargar desde backend - AdminProvider ya lo hace automáticamente
+  // useEffect que causaba bucle infinito eliminado
+
+  // Calcular estadísticas
+  const totalProperties = propertyList.length;
+  const averageMonthlyPrice = totalProperties > 0 ? propertyList.reduce((sum, prop) => {
+    const monthlyPrice = prop.prices?.monthly;
+    const price = typeof monthlyPrice === 'number' ? monthlyPrice : parseInt(String(monthlyPrice || '0').replace(/[^\d]/g, ''));
+    return sum + (isNaN(price) ? 0 : price);
+  }, 0) / totalProperties : 0;
+
+  const averageDailyPrice = totalProperties > 0 ? propertyList.reduce((sum, prop) => {
+    const dailyPrice = prop.prices?.daily;
+    const price = typeof dailyPrice === 'number' ? dailyPrice : parseInt(String(dailyPrice || '0').replace(/[^\d]/g, ''));
+    return sum + (isNaN(price) ? 0 : price);
+  }, 0) / totalProperties : 0;
+
+  // Calcular zonas cubiertas dinámicamente
+  const uniqueZones = new Set();
+  propertyList.forEach(property => {
+    if (property.address) {
+      // Extraer la zona/barrio de la dirección
+      const address = property.address.toLowerCase();
+      if (address.includes('san telmo') || address.includes('moldes')) {
+        uniqueZones.add('San Telmo');
+      } else if (address.includes('barracas') || address.includes('santa fe')) {
+        uniqueZones.add('Barracas');
+      } else if (address.includes('puerto madero') || address.includes('dorrego') || address.includes('convencion') || address.includes('ugarteche')) {
+        uniqueZones.add('Puerto Madero');
+      }
+    }
+  });
+  const totalZones = uniqueZones.size || 3; // Fallback a 3 si no se pueden determinar
+
+  const exportData = () => {
+    const dataStr = JSON.stringify(properties, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `baconfort_data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const viewProperty = (propertyId) => {
+    // Mapeo de IDs a rutas estáticas (propiedades con páginas dedicadas)
+    const staticRouteMap = {
+      'moldes-1680': '/departamentos/moldes-1680',
+      'santa-fe-3770': '/departamentos/santa-fe-3770',
+      'dorrego-1548': '/departamentos/dorrego-1548',
+      'convencion-1994': '/departamentos/convencion-1994',
+      'ugarteche-2824': '/departamentos/ugarteche-2824'
+    };
+
+    // Verificar si es una propiedad con página estática
+    const staticRoute = staticRouteMap[propertyId];
+    if (staticRoute) {
+      window.open(staticRoute, '_blank');
+      return;
+    }
+
+    // Para propiedades dinámicas, usar la ruta genérica
+    const dynamicRoute = `/departamentos/${propertyId}`;
+    window.open(dynamicRoute, '_blank');
+  };
+
+  // Función para BLOQUEAR propiedades
+  const blockProperty = async (propertyId) => {
+    const property = properties[propertyId];
+    
+    if (property?.isBlocked) {
+      alert('La propiedad ya está bloqueada');
+      return;
+    }
+    
+    try {
+      console.log(`� Bloqueando propiedad ${propertyId}`);
+      
+      await updateProperty(propertyId, {
+        isBlocked: true,
+        blockReason: 'Bloqueado desde panel admin',
+        blockedAt: new Date().toISOString()
+      });
+      
+      console.log(`✅ Propiedad ${propertyId} bloqueada exitosamente`);
+    } catch (error) {
+      console.error(`❌ Error al bloquear ${propertyId}:`, error);
+      alert(`Error al bloquear la propiedad: ${error.message}`);
+    }
+  };
+
+  // Función para DESBLOQUEAR propiedades
+  const unblockProperty = async (propertyId) => {
+    const property = properties[propertyId];
+    
+    if (!property?.isBlocked) {
+      alert('La propiedad ya está desbloqueada');
+      return;
+    }
+    
+    try {
+      await updateProperty(propertyId, {
+        isBlocked: false,
+        blockReason: null,
+        blockedAt: null
+      });
+    } catch (error) {
+      alert(`Error al desbloquear la propiedad: ${error.message}`);
+    }
+  };
+
+  // Función para ELIMINAR propiedades - Simplificada
+  const handleDeleteProperty = async (propertyId) => {
+    const property = properties[propertyId];
+    const propertyTitle = property?.title || 'esta propiedad';
+    
+    // Verificar si la propiedad tiene archivos/páginas estáticas
+    const hasStaticPage = ['moldes-1680', 'santa-fe-3770', 'dorrego-1548', 'convencion-1994', 'ugarteche-2824'].includes(propertyId);
+    
+    if (hasStaticPage) {
+      alert('⚠️ No se puede eliminar esta propiedad porque tiene archivos y página estática asociada.');
+      return;
+    }
+    
+    // Confirmación simple
+    const confirmDelete = window.confirm(`¿Eliminar "${propertyTitle}" permanentemente?`);
+    
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ Dashboard: Eliminando propiedad:', propertyId);
+      
+      // Llamar a la función de eliminación del contexto
+      await deleteProperty(propertyId);
+      
+      console.log('✅ Dashboard: Propiedad eliminada exitosamente');
+      alert('✅ Propiedad eliminada exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Dashboard: Error al eliminar propiedad:', error);
+      alert(`❌ Error al eliminar la propiedad: ${error.message}`);
+    }
+  };
+
+  return (
+    <div className="dashboard" style={{backgroundColor: 'transparent !important'}}>      
+      <div className="dashboard-header">
+        <h2>
+          <i className="fas fa-chart-line"></i>
+          Dashboard
+        </h2>
+        <p>Resumen general de las propiedades de BACONFORT</p>
+        
+        {/* Navegación de secciones */}
+        <div className="dashboard-nav">
+          <button 
+            className={`nav-btn ${activeSection === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveSection('overview')}
+          >
+            <i className="fas fa-chart-line"></i>
+            Resumen General
+          </button>
+          <button 
+            className={`nav-btn ${activeSection === 'calendars' ? 'active' : ''}`}
+            onClick={() => setActiveSection('calendars')}
+          >
+            <i className="fas fa-calendar-alt"></i>
+            Calendarios de Ocupación
+          </button>
+        </div>
+      </div>
+
+      {/* Renderizado condicional según la sección activa */}
+      {activeSection === 'overview' && (
+        <div className="dashboard-section">
+          {/* Estadísticas principales */}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon buildings">
+                <i className="fas fa-building"></i>
+              </div>
+              <div className="stat-content">
+                <h3>{totalProperties}</h3>
+                <p>Propiedades Totales</p>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon price">
+                <i className="fas fa-dollar-sign"></i>
+              </div>
+              <div className="stat-content">
+                <h3>USD {Math.round(averageMonthlyPrice)}</h3>
+                <p>Precio Promedio Mensual</p>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon daily">
+                <i className="fas fa-calendar-day"></i>
+              </div>
+              <div className="stat-content">
+                <h3>USD {Math.round(averageDailyPrice)}</h3>
+                <p>Precio Promedio Diario</p>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon location">
+                <i className="fas fa-map-marker-alt"></i>
+              </div>
+              <div className="stat-content">
+                <h3>{totalZones}</h3>
+                <p>Zonas Cubiertas</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de propiedades */}
+          <div className="properties-overview">
+            <h3>
+              <i className="fas fa-list"></i>
+              Gestión de Propiedades
+            </h3>
+            
+            <div className="properties-grid">
+              {propertyList
+                .filter(property => property && property.id) // Filtrar propiedades válidas
+                .map(property => (
+                <div key={property.id} className={`property-card ${property.isBlocked ? 'blocked' : ''}`}>
+                  <div className="property-image">
+                    <img 
+                      src={property.coverImage || '/img/logo.jpg'} 
+                      alt={property.title || 'Propiedad'}
+                      onError={(e) => {
+                        e.target.src = '/img/logo.jpg';
+                      }}
+                    />
+                    {property.isBlocked && (
+                      <div className="blocked-overlay">
+                        <i className="fas fa-lock"></i>
+                        <span>BLOQUEADO</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="property-info">
+                    <h4>{property.title || 'Sin título'}</h4>
+                    <p className="property-address">
+                      <i className="fas fa-map-marker-alt"></i>
+                      {property.address || 'Sin dirección'}
+                    </p>
+                    
+                    <div className="property-prices">
+                      <span className="price-tag monthly">
+                        <i className="fas fa-calendar"></i>
+                        {property.prices?.monthly || 'N/A'}/mes
+                      </span>
+                      <span className="price-tag daily">
+                        <i className="fas fa-calendar-day"></i>
+                        {property.prices?.daily || 'N/A'}/día
+                      </span>
+                    </div>
+                    
+                    <div className="property-actions">
+                      <div className="main-actions">
+                        <button 
+                          className="btn btn-primary btn-sm"
+                          onClick={() => onEditProperty(property.id)}
+                        >
+                          <i className="fas fa-edit"></i>
+                          Editar
+                        </button>
+                        <button 
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => viewProperty(property.id)}
+                          title={`Ver página de ${property.title}`}
+                        >
+                          <i className="fas fa-eye"></i>
+                          Ver
+                        </button>
+                        
+                        {/* Botón de eliminación solo para propiedades sin archivos */}
+                        {!['moldes-1680', 'santa-fe-3770', 'dorrego-1548', 'convencion-1994', 'ugarteche-2824'].includes(property.id) && (
+                          <button 
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteProperty(property.id)}
+                            title={`Eliminar "${property.title}" permanentemente`}
+                          >
+                            <i className="fas fa-trash-alt"></i>
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* BOTONES SEPARADOS DE BLOQUEO/DESBLOQUEO */}
+                      <div className="block-actions" style={{zIndex: 9999, position: 'relative'}}>
+                        <button 
+                          className={`btn btn-sm ${property.isBlocked ? 'btn-secondary' : 'btn-warning'}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            blockProperty(property.id);
+                          }}
+                          disabled={property.isBlocked}
+                          title="Bloquear propiedad como ocupada"
+                          style={{zIndex: 10000, position: 'relative', pointerEvents: property.isBlocked ? 'none' : 'auto'}}
+                        >
+                          <i className="fas fa-lock"></i>
+                          Bloquear
+                        </button>
+                        <button 
+                          className={`btn btn-sm ${!property.isBlocked ? 'btn-secondary' : 'btn-success'}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            unblockProperty(property.id);
+                          }}
+                          disabled={!property.isBlocked}
+                          title="Desbloquear propiedad para reservas"
+                          style={{zIndex: 10000, position: 'relative', pointerEvents: !property.isBlocked ? 'none' : 'auto'}}
+                        >
+                          <i className="fas fa-unlock"></i>
+                          Desbloquear
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'calendars' && (
+        <div className="dashboard-section">
+          {/* Calendarios primero */}
+          <div className="calendars-dashboard-section">
+            <h3>
+              <i className="fas fa-calendar-week"></i>
+              Calendarios de Ocupación por Propiedad
+            </h3>
+            
+            <div className="calendars-dashboard-grid">
+              {propertyList.length > 0 ? (
+                propertyList.map(property => (
+                  <div key={property.id} className="calendar-dashboard-item">
+                    <div className="calendar-dashboard-title">
+                      {property.title}
+                    </div>
+                    <AdminCalendar 
+                      propertyId={property.id}
+                      propertyTitle={property.title}
+                      isVisible={true}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="no-properties-message">
+                  <i className="fas fa-calendar-times"></i>
+                  <h4>No hay propiedades disponibles</h4>
+                  <p>Agrega propiedades para ver sus calendarios</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Resumen después */}
+          <div className="summary-dashboard-section">
+            <h3>
+              <i className="fas fa-chart-pie"></i>
+              Resumen de Ocupación
+            </h3>
+            <OccupancySummary properties={propertyList} />
+          </div>
+        </div>
+      )}
+
+      {/* Sección de Debug removida para producción */}
+    </div>
+  );
+}
+
+export default Dashboard;

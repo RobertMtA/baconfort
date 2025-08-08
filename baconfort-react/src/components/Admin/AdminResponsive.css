@@ -1,0 +1,313 @@
+/* 
+ * AdminResponsive.css
+ * Estilos responsivos globales para todo el panel de administración
+ * Aplicar este archivo en el componente AdminPanel principal
+ */
+
+/* Variables CSS para consistencia */
+:root {
+  --admin-primary-color: #667eea;
+  --admin-secondary-color: #e67e22;
+  --admin-success-color: #28a745;
+  --admin-danger-color: #dc3545;
+  --admin-warning-color: #ffc107;
+  --admin-info-color: #17a2b8;
+  --admin-light-color: #f8f9fa;
+  --admin-dark-color: #2c3e50;
+  
+  --admin-border-radius: 8px;
+  --admin-border-radius-lg: 12px;
+  --admin-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --admin-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.15);
+  
+  --admin-spacing-xs: 0.25rem;
+  --admin-spacing-sm: 0.5rem;
+  --admin-spacing-md: 1rem;
+  --admin-spacing-lg: 1.5rem;
+  --admin-spacing-xl: 2rem;
+}
+
+/* Contenedor principal del admin */
+.admin-container {
+  min-height: 100vh;
+  background-color: var(--admin-light-color);
+}
+
+/* Estilos responsivos globales para componentes admin */
+.admin-component {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Botones responsivos */
+.admin-btn-responsive {
+  transition: all 0.3s ease;
+  word-wrap: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tablas responsivas */
+.admin-table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-table-responsive table {
+  min-width: 600px;
+}
+
+/* Cards responsivas */
+.admin-card-responsive {
+  background: white;
+  border-radius: var(--admin-border-radius);
+  box-shadow: var(--admin-shadow);
+  margin-bottom: var(--admin-spacing-lg);
+  overflow: hidden;
+}
+
+/* Formularios responsivos */
+.admin-form-responsive .form-group {
+  margin-bottom: var(--admin-spacing-md);
+}
+
+.admin-form-responsive .form-control,
+.admin-form-responsive .form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: var(--admin-border-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.admin-form-responsive .form-control:focus,
+.admin-form-responsive .form-select:focus {
+  outline: none;
+  border-color: var(--admin-primary-color);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
+}
+
+/* Grids responsivos */
+.admin-grid-responsive {
+  display: grid;
+  gap: var(--admin-spacing-lg);
+}
+
+.admin-grid-1 { grid-template-columns: 1fr; }
+.admin-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.admin-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.admin-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.admin-grid-auto { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+
+/* Headers responsivos */
+.admin-header-responsive {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--admin-spacing-xl);
+  padding-bottom: var(--admin-spacing-md);
+  border-bottom: 2px solid #e9ecef;
+}
+
+.admin-header-responsive h1,
+.admin-header-responsive h2,
+.admin-header-responsive h3 {
+  margin: 0;
+  color: var(--admin-dark-color);
+}
+
+/* Navegación responsiva */
+.admin-nav-responsive {
+  display: flex;
+  gap: var(--admin-spacing-md);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Media Queries Globales */
+
+/* Tablets */
+@media (max-width: 1024px) {
+  .admin-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .admin-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  
+  .admin-header-responsive {
+    flex-direction: column;
+    gap: var(--admin-spacing-md);
+    align-items: flex-start;
+    text-align: left;
+  }
+  
+  .admin-nav-responsive {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  .admin-container {
+    padding: var(--admin-spacing-md);
+  }
+  
+  .admin-grid-4,
+  .admin-grid-3,
+  .admin-grid-2 { 
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-grid-auto {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-card-responsive {
+    margin-bottom: var(--admin-spacing-md);
+    padding: var(--admin-spacing-md);
+  }
+  
+  .admin-header-responsive {
+    margin-bottom: var(--admin-spacing-lg);
+  }
+  
+  .admin-header-responsive h1 { font-size: 1.5rem; }
+  .admin-header-responsive h2 { font-size: 1.25rem; }
+  .admin-header-responsive h3 { font-size: 1.1rem; }
+  
+  .admin-nav-responsive {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-spacing-sm);
+  }
+  
+  .admin-btn-responsive {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
+  }
+  
+  .admin-form-responsive .form-control,
+  .admin-form-responsive .form-select {
+    font-size: 1rem; /* Evitar zoom en iOS */
+  }
+  
+  /* Ocultar scroll horizontal en móviles */
+  .admin-table-responsive {
+    margin: 0 calc(-1 * var(--admin-spacing-md));
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .admin-container {
+    padding: var(--admin-spacing-sm);
+  }
+  
+  .admin-card-responsive {
+    padding: var(--admin-spacing-sm);
+  }
+  
+  .admin-header-responsive {
+    margin-bottom: var(--admin-spacing-md);
+  }
+  
+  .admin-header-responsive h1 { font-size: 1.25rem; }
+  .admin-header-responsive h2 { font-size: 1.1rem; }
+  .admin-header-responsive h3 { font-size: 1rem; }
+  
+  .admin-btn-responsive {
+    padding: var(--admin-spacing-sm) var(--admin-spacing-md);
+    font-size: 0.85rem;
+  }
+  
+  .admin-form-responsive .form-control,
+  .admin-form-responsive .form-select {
+    padding: var(--admin-spacing-sm);
+  }
+}
+
+/* Utilidades de spacing responsivo */
+.admin-spacing-responsive {
+  padding: var(--admin-spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .admin-spacing-responsive {
+    padding: var(--admin-spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-spacing-responsive {
+    padding: var(--admin-spacing-sm);
+  }
+}
+
+/* Utilidades de texto responsivo */
+.admin-text-responsive {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Asegurar que los elementos no se salgan de pantalla */
+.admin-overflow-safe {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Estados de carga y vacío responsivos */
+.admin-state-responsive {
+  text-align: center;
+  padding: var(--admin-spacing-xl) var(--admin-spacing-lg);
+  background: white;
+  border-radius: var(--admin-border-radius-lg);
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-state-responsive i {
+  font-size: 3rem;
+  color: var(--admin-secondary-color);
+  margin-bottom: var(--admin-spacing-md);
+}
+
+@media (max-width: 768px) {
+  .admin-state-responsive {
+    padding: var(--admin-spacing-lg) var(--admin-spacing-md);
+  }
+  
+  .admin-state-responsive i {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-state-responsive {
+    padding: var(--admin-spacing-md);
+  }
+  
+  .admin-state-responsive i {
+    font-size: 1.5rem;
+  }
+}
+
+/* Animaciones suaves para transiciones responsivas */
+.admin-transition-responsive {
+  transition: all 0.3s ease;
+}
+
+/* Fix para inputs en iOS que causan zoom */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

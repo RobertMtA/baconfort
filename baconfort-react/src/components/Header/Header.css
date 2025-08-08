@@ -1,0 +1,507 @@
+/* Custom Navbar styles */
+.custom-navbar {
+  transition: all 0.3s ease;
+  padding: 1rem 0;
+  background-color: #2196f3 !important;
+}
+
+.custom-navbar .navbar-nav {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.custom-navbar .container {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+/* Brand styles */
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.navbar-brand:hover {
+  color: #fff !important;
+}
+
+.brand-logo {
+  border-radius: 50%;
+}
+
+.brand-icon {
+  color: #f1c40f;
+}
+
+.brand-text {
+  margin-left: 0.5rem;
+  font-weight: 600;
+}
+
+/* Custom toggle button */
+.custom-toggler {
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  padding: 0.5rem !important;
+  background: transparent !important;
+}
+
+.custom-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25) !important;
+}
+
+.custom-toggler i {
+  color: #fff;
+  font-size: 1.2rem;
+}
+
+/* Ensure Bootstrap navbar toggle works */
+.navbar-toggler {
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
+.navbar-toggler:focus,
+.navbar-toggler:hover {
+  text-decoration: none;
+  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Override the default hamburger icon */
+.navbar-toggler-icon {
+  display: none !important;
+}
+
+/* Show our custom icons */
+.custom-toggler i {
+  display: block !important;
+}
+
+/* Navigation items */
+.nav-item {
+  margin: 0 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.nav-link {
+  color: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  height: 100%;
+  min-height: 48px;
+}
+
+.nav-link:hover {
+  color: #f1c40f !important;
+}
+
+.nav-link.active {
+  color: #f1c40f !important;
+}
+
+.nav-icon {
+  font-size: 1rem;
+}
+
+/* User section in navbar */
+.navbar-user-section {
+  margin-left: 1rem;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.navbar-user-section .user-button-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+}
+
+.navbar-user-section .user-btn {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 2px solid #ffffff !important;
+  color: #2196f3 !important;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 80px;
+  justify-content: center;
+  text-shadow: none;
+}
+
+.navbar-user-section .user-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.navbar-user-section .login-btn:hover {
+  background-color: rgba(52, 152, 219, 0.3);
+  border-color: #3498db;
+}
+
+.navbar-user-section .register-btn {
+  background-color: rgba(46, 204, 113, 0.1);
+  border-color: rgba(46, 204, 113, 0.4);
+}
+
+.navbar-user-section .register-btn:hover {
+  background-color: rgba(46, 204, 113, 0.3);
+  border-color: #2ecc71;
+}
+
+/* Botón de logout directo */
+.navbar-user-section .logout-btn-direct {
+  background: rgba(231, 76, 60, 0.9) !important;
+  border: 2px solid #e74c3c !important;
+  color: white !important;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 80px;
+  justify-content: center;
+  text-shadow: none;
+}
+
+.navbar-user-section .logout-btn-direct:hover {
+  background-color: #c0392b !important;
+  border-color: #a93226 !important;
+  transform: translateY(-1px);
+}
+
+/* Asegurar que el dropdown del usuario aparezca correctamente */
+.navbar-user-section .user-dropdown {
+  position: relative;
+  z-index: 9999;
+}
+
+.navbar-user-section .user-profile-btn {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 2px solid #ffffff !important;
+  color: #2196f3 !important;
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  min-width: 150px;
+  text-shadow: none;
+}
+
+.navbar-user-section .user-profile-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Hacer el avatar del usuario más visible */
+.navbar-user-section .user-avatar {
+  background: linear-gradient(135deg, #2196f3, #1976d2) !important;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white !important;
+  font-size: 0.8rem;
+}
+
+.navbar-user-section .user-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #2196f3 !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.navbar-user-section .dropdown-arrow {
+  color: #2196f3 !important;
+  transition: transform 0.2s ease;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 991px) {
+  .navbar-user-section {
+    margin-left: 0;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    justify-content: center;
+  }
+}
+
+/* Media query para pantallas medianas */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .nav-item {
+    margin: 0 0.1rem !important;
+  }
+  
+  .nav-link {
+    padding: 0.5rem 0.5rem !important;
+    font-size: 0.85rem;
+  }
+  
+  .navbar-user-section {
+    margin-left: 0.25rem !important;
+  }
+}
+
+/* Media query para desktop - asegurar alineación */
+@media (min-width: 992px) {
+  .navbar-nav {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  .nav-item {
+    margin: 0 0.1rem !important;
+    flex-shrink: 0;
+  }
+  
+  .nav-link {
+    padding: 0.5rem 0.75rem !important;
+    height: 48px !important;
+    white-space: nowrap;
+    font-size: 0.9rem;
+  }
+  
+  .navbar-user-section {
+    margin-left: 0.5rem !important;
+    height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0;
+  }
+}
+
+/* Media query para pantallas grandes */
+@media (min-width: 1200px) {
+  .nav-item {
+    margin: 0 0.25rem !important;
+  }
+  
+  .nav-link {
+    padding: 0.5rem 1rem !important;
+    font-size: 1rem;
+  }
+  
+  .navbar-user-section {
+    margin-left: 1rem !important;
+  }
+}
+
+/* Scrolled state */
+.header.scrolled .custom-navbar {
+  padding: 0.5rem 0;
+  background-color: #343a40 !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+/* Video styles */
+.video-cover {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.back-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+/* Responsive video adjustments */
+@media (max-width: 1200px) {
+  .video-cover {
+    height: 80vh;
+  }
+}
+
+@media (max-width: 991px) {
+  .video-cover {
+    height: 70vh;
+  }
+
+  .navbar-collapse {
+    background-color: #343a40;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+
+  .nav-item {
+    margin: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .nav-item:last-child {
+    border-bottom: none;
+  }
+
+  .nav-link {
+    padding: 1rem !important;
+    border-radius: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-link:hover {
+    background-color: rgba(255,255,255,0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .video-cover {
+    height: 60vh;
+  }
+  
+  .back-video {
+    object-position: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .video-cover {
+    height: 50vh;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .video-cover {
+    height: 100vh;
+  }
+}
+
+/* Estilos específicos para el enlace Mi Perfil */
+.nav-link[href="/profile"] {
+  background: rgba(241, 196, 15, 0.15) !important;
+  border: 2px solid rgba(241, 196, 15, 0.3) !important;
+  border-radius: 20px !important;
+  padding: 0.5rem 1rem !important;
+  margin: 0 0.25rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.nav-link[href="/profile"]:hover {
+  background: rgba(241, 196, 15, 0.25) !important;
+  border-color: #f1c40f !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.nav-link[href="/profile"] .nav-icon {
+  color: #f1c40f !important;
+}
+
+.nav-link[href="/profile"].active {
+  background: rgba(241, 196, 15, 0.3) !important;
+  border-color: #f1c40f !important;
+}
+
+/* Estilos específicos para el enlace Mis Reservas */
+.nav-link[href="/my-reservations"] {
+  background: rgba(46, 204, 113, 0.15) !important;
+  border: 2px solid rgba(46, 204, 113, 0.3) !important;
+  border-radius: 20px !important;
+  padding: 0.5rem 1rem !important;
+  margin: 0 0.25rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.nav-link[href="/my-reservations"]:hover {
+  background: rgba(46, 204, 113, 0.25) !important;
+  border-color: #2ecc71 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.nav-link[href="/my-reservations"] .nav-icon {
+  color: #2ecc71 !important;
+}
+
+.nav-link[href="/my-reservations"].active {
+  background: rgba(46, 204, 113, 0.3) !important;
+  border-color: #2ecc71 !important;
+}
+
+/* Estilos adicionales para alineación perfecta del navbar */
+.navbar {
+  min-height: 70px;
+}
+
+.navbar .container {
+  align-items: center !important;
+  min-height: 70px;
+}
+
+.navbar-collapse {
+  align-items: center;
+}
+
+.navbar-nav {
+  align-items: center !important;
+  height: 100%;
+}
+
+.nav-item, .navbar-nav .nav-item {
+  display: flex !important;
+  align-items: center !important;
+  height: 100%;
+}
+
+.nav-link, .navbar-nav .nav-link {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center;
+  height: 48px !important;
+  line-height: 1 !important;
+}
+
+/* Corrección específica para el logo */
+.navbar-brand {
+  display: flex !important;
+  align-items: center !important;
+  height: 48px;
+}

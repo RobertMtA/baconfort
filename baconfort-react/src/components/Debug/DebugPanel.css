@@ -1,0 +1,141 @@
+.debug-panel {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #f8f9fa;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  padding: 15px;
+  max-width: 350px;
+  z-index: 9999;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.debug-panel h3 {
+  margin: 0 0 10px 0;
+  color: #007bff;
+  font-size: 16px;
+}
+
+.debug-panel p {
+  margin: 0 0 15px 0;
+  font-size: 12px;
+  color: #666;
+  font-weight: bold;
+}
+
+.debug-buttons {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.debug-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.debug-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.debug-btn.primary {
+  background: #007bff;
+  color: white;
+}
+
+.debug-btn.primary:hover {
+  background: #0056b3;
+}
+
+.debug-btn.warning {
+  background: #ffc107;
+  color: #212529;
+}
+
+.debug-btn.warning:hover {
+  background: #e0a800;
+}
+
+.debug-btn.info {
+  background: #17a2b8;
+  color: white;
+}
+
+.debug-btn.info:hover {
+  background: #117a8b;
+}
+
+.debug-btn.success {
+  background: #28a745;
+  color: white;
+}
+
+.debug-btn.success:hover {
+  background: #1e7e34;
+}
+
+.debug-btn.secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.debug-btn.secondary:hover {
+  background: #545b62;
+}
+
+.debug-btn.danger {
+  background: #dc3545;
+  color: white;
+}
+
+.debug-btn.danger:hover {
+  background: #c82333;
+}
+
+.debug-btn.neutral {
+  background: #e9ecef;
+  color: #495057;
+  border: 1px solid #ced4da;
+}
+
+.debug-btn.neutral:hover {
+  background: #dee2e6;
+}
+
+.debug-info {
+  background: #e7f3ff;
+  padding: 10px;
+  border-radius: 4px;
+  border-left: 4px solid #007bff;
+}
+
+.debug-info h4 {
+  margin: 0 0 8px 0;
+  color: #0056b3;
+  font-size: 14px;
+}
+
+.debug-info ol {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 11px;
+  color: #495057;
+}
+
+.debug-info li {
+  margin-bottom: 4px;
+}
+
+.debug-info strong {
+  color: #007bff;
+}

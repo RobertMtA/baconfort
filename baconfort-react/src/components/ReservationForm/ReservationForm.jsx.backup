@@ -1,0 +1,1494 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContextAPI';
+import { useAdmin } from '../../context/AdminContext-STATEFUL'; // ✅ USANDO VERSIÓN CON ESTADO
+import { useAllOccupiedDates } from '../../hooks/useAllOccupiedDates';
+import { usePriceCalculator } from '../../hooks/usePriceCalculator';
+import PriceService from '../../services/priceService';
+import AuthModal from '../Auth/AuthModal';
+import DatePickerWithAvailability from '../DatePickerWithAvailability/DatePickerWithAvailability';
+import PaymentMethodSelector from '../Payment/PaymentMethodSelector';
+import EmailVerification from '../Reservation/EmailVerification';
+import { API_URL } from '../../services/api';
+import './ReservationForm.css';
+
+function ReservationForm({ apartmentName = "este departamento", propertyId = null, preloadData = null }) {
+  const { user, isAuthenticated } = useAuth();
+  const { getAllProperties, forcePriceSync } = useAdmin(); // ✅ AGREGAMOS forcePriceSync
+  const { occupiedDates, loading: datesLoading, isRangeAvailable } = useAllOccupiedDates(propertyId);
+  // Número de fechas ocupadas calculado
+  const hasOccupiedDates = occupiedDates.length > 0;
+  
+  // DEBUG: Log de datos importantes del formulario
+  useEffect(() => {
+    // Logs removidos para producción
+  }, [propertyId, apartmentName, occupiedDates]);
+  
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+
+  // Debug log para el estado del modal
+  useEffect(() => {
+    if (showAuthModal) {
+      console.log('🔍 RESERVATION FORM: Modal ABIERTO, modo:', authMode);
+    }
+  }, [showAuthModal, authMode]);
+
+  // Verificar estado de bloqueo de la propiedad
+  const properties = getAllProperties();
+  const property = propertyId ? properties[propertyId] : null;
+  const isPropertyBlocked = property?.isBlocked || false;
+  
+  const [formData, setFormData] = useState({
+    checkIn: preloadData?.checkIn || '',
+    checkOut: preloadData?.checkOut || '',
+    guests: preloadData?.guests || '1',
+    fullName: '',
+    email: '',
+    phone: '',
+    dni: '',
+    passport: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
+  
+  // Estado para el dropdown de identificación
+  const [identificationDropdownOpen, setIdentificationDropdownOpen] = useState(false);
+  const [selectedIdType, setSelectedIdType] = useState(''); // 'dni' o 'passport'
+  
+  // Estados para el sistema de pagos
+  const [showPayment, setShowPayment] = useState(false);
+  const [reservationCreated, setReservationCreated] = useState(null);
+  const [reservationTotal, setReservationTotal] = useState(null);
+  
+  // Estado para verificación de email
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  
+  // Estados para precios dinámicos
+  const [propertyPrices, setPropertyPrices] = useState(null);
+  const [pricesLoading, setPricesLoading] = useState(false);
+  
+  // Calcular precio usando el hook
+  const priceCalculation = usePriceCalculator(
+    propertyPrices, 
+    formData.checkIn, 
+    formData.checkOut
+  );
+
+  // Escuchar eventos de sincronización de precios
+  useEffect(() => {
+    const handlePriceSync = (event) => {
+      console.log('🔄 [ReservationForm] Evento de sincronización de precios recibido:', event.detail);
+      
+      // Solo recargar si es para esta propiedad o para todas
+      if (!event.detail.propertyId || event.detail.propertyId === propertyId) {
+        loadPropertyPrices();
+      }
+    };
+
+    window.addEventListener('baconfort-prices-synced', handlePriceSync);
+    
+    return () => {
+      window.removeEventListener('baconfort-prices-synced', handlePriceSync);
+    };
+  }, [propertyId]);
+
+  // Función para cargar precios (extraída para reutilización)
+  const loadPropertyPrices = useCallback(async () => {
+    if (!propertyId) {
+      // Sin propertyId, usar precios por defecto
+      setPropertyPrices(PriceService.getDefaultPrices());
+      return;
+    }
+
+    setPricesLoading(true);
+
+    try {
+      // Primero intentar obtener desde el contexto admin
+      const properties = getAllProperties();
+      const property = properties[propertyId];
+      
+      console.log(`💰 [ReservationForm] Verificando precios para ${propertyId}:`, {
+        property: property ? 'encontrada' : 'no encontrada',
+        prices: property?.prices,
+        propertyId
+      });
+      
+      if (property && property.prices) {
+        console.log(`✅ [ReservationForm] Usando precios del contexto:`, property.prices);
+        setPropertyPrices(property.prices);
+      } else {
+        console.log(`⚠️ [ReservationForm] Propiedad no encontrada en contexto, forzando sincronización...`);
+        
+        // Forzar sincronización de precios antes de intentar cargar desde API
+        if (typeof forcePriceSync === 'function') {
+          forcePriceSync(propertyId);
+        }
+        
+        // Intentar de nuevo después de la sincronización
+        setTimeout(() => {
+          const updatedProperties = getAllProperties();
+          const updatedProperty = updatedProperties[propertyId];
+          
+          if (updatedProperty && updatedProperty.prices) {
+            console.log(`✅ [ReservationForm] Precios encontrados después de sincronización:`, updatedProperty.prices);
+            setPropertyPrices(updatedProperty.prices);
+          } else {
+            console.log(`⚠️ [ReservationForm] Cargando desde API para ${propertyId}`);
+            // Si no está en contexto, cargar desde API
+            PriceService.getPropertyPrices(propertyId).then(result => {
+              setPropertyPrices(result.prices);
+            }).catch(error => {
+              console.log(`❌ [ReservationForm] Error desde API, usando precios por defecto:`, error);
+              setPropertyPrices(PriceService.getDefaultPrices());
+            });
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.log(`❌ [ReservationForm] Error, usando precios por defecto:`, error);
+      setPropertyPrices(PriceService.getDefaultPrices());
+    } finally {
+      setPricesLoading(false);
+    }
+  }, [propertyId, getAllProperties, forcePriceSync]);
+
+  // Cargar precios de la propiedad
+  useEffect(() => {
+    loadPropertyPrices();
+  }, [loadPropertyPrices]);
+
+  // Configurar fechas mínimas
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Actualizar mensaje cuando cambie apartmentName
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      message: `Hola, me interesa reservar ${apartmentName}. ¿Está disponible para las fechas indicadas? Por favor contactarme a mi email o teléfono. Saludos.`
+    }));
+  }, [apartmentName]);
+  
+  useEffect(() => {
+    // Auto-completar check-in con mañana si está vacío
+    if (!formData.checkIn) {
+      // Crear fecha de mañana correctamente sin mutación
+      const today = new Date();
+      const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      // Formatear correctamente la fecha
+      const year = tomorrow.getFullYear();
+      const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const day = String(tomorrow.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      setFormData(prev => ({
+        ...prev,
+        checkIn: formattedDate
+      }));
+    }
+  }, []);
+
+  // Autocompletar datos del usuario autenticado solo si los campos están vacíos
+  useEffect(() => {
+    if (user && isAuthenticated()) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: prev.fullName || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || ''
+      }));
+    }
+  }, [user, isAuthenticated]);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (identificationDropdownOpen && !event.target.closest('.form-group')) {
+        setIdentificationDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [identificationDropdownOpen]);
+
+  // Validación mejorada
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.checkIn) {
+      errors.checkIn = 'Fecha de entrada requerida';
+    }
+    
+    if (!formData.checkOut) {
+      errors.checkOut = 'Fecha de salida requerida';
+    }
+    
+    if (formData.checkIn && formData.checkOut) {
+      if (new Date(formData.checkOut) <= new Date(formData.checkIn)) {
+        errors.checkOut = 'La fecha de salida debe ser posterior a la entrada';
+      }
+      
+      // TEMPORALMENTE DESHABILITADA LA VALIDACIÓN DE FECHAS PARA DEBUGGING
+      // Validar si el rango de fechas está disponible
+      /*
+      const rangeAvailable = isRangeAvailable(formData.checkIn, formData.checkOut);
+      console.log('📅 VALIDATION: Verificando disponibilidad de fechas:', {
+        checkIn: formData.checkIn,
+        checkOut: formData.checkOut,
+        rangeAvailable
+      });
+      
+      if (!rangeAvailable) {
+        errors.checkOut = 'Algunas fechas en este rango ya están ocupadas. Por favor, selecciona otras fechas.';
+        console.log('❌ VALIDATION: Fechas no disponibles');
+      } else {
+        console.log('✅ VALIDATION: Fechas disponibles');
+      }
+      */
+      
+      console.log('⚠️ DEBUG: Validación de fechas ocupadas temporalmente deshabilitada');
+    }
+    
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Nombre completo requerido';
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email requerido';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Email inválido';
+    }
+    
+    // Validación de DNI o Pasaporte (al menos uno requerido)
+    const hasDNI = formData.dni && formData.dni.trim();
+    const hasPassport = formData.passport && formData.passport.trim();
+    
+    if (!hasDNI && !hasPassport) {
+      errors.identification = 'DNI o Pasaporte requerido';
+    } else {
+      if (hasDNI && !/^\d{7,8}$/.test(formData.dni.trim())) {
+        errors.dni = 'DNI debe tener 7 u 8 dígitos';
+      }
+      if (hasPassport && formData.passport.trim().length < 6) {
+        errors.passport = 'Pasaporte debe tener al menos 6 caracteres';
+      }
+    }
+    
+    if (!formData.message.trim()) {
+      errors.message = 'Mensaje requerido';
+    }
+    
+    return errors;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Validación especial para DNI - solo números
+    if (name === 'dni') {
+      const numericValue = value.replace(/\D/g, ''); // Remover caracteres no numéricos
+      if (numericValue.length <= 8) { // Máximo 8 dígitos
+        setFormData(prevState => ({
+          ...prevState,
+          [name]: numericValue
+        }));
+        // Establecer el tipo seleccionado
+        if (!selectedIdType) {
+          setSelectedIdType('dni');
+        }
+      }
+      
+      // Limpiar errores de validación al cambiar
+      if (validationErrors[name]) {
+        setValidationErrors(prev => ({
+          ...prev,
+          [name]: null
+        }));
+      }
+      return;
+    }
+    
+    // Validación especial para Pasaporte - letras y números, máximo 20 caracteres
+    if (name === 'passport') {
+      const alphanumericValue = value.replace(/[^A-Za-z0-9]/g, ''); // Solo letras y números
+      if (alphanumericValue.length <= 20) { // Máximo 20 caracteres
+        setFormData(prevState => ({
+          ...prevState,
+          [name]: alphanumericValue.toUpperCase()
+        }));
+        // Establecer el tipo seleccionado
+        if (!selectedIdType) {
+          setSelectedIdType('passport');
+        }
+      }
+      
+      // Limpiar errores de validación al cambiar
+      if (validationErrors[name]) {
+        setValidationErrors(prev => ({
+          ...prev,
+          [name]: null
+        }));
+      }
+      return;
+    }
+    
+    // Log especial para fechas
+    if (name === 'checkIn' || name === 'checkOut') {
+      // Log removido para producción
+    }
+    
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+    
+    // Limpiar errores de validación al cambiar
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: null
+      }));
+    }
+    
+    // Auto-completar check-out si se selecciona check-in
+    if (name === 'checkIn' && value && !formData.checkOut) {
+      // Crear fecha de checkout correctamente sin mutación
+      const checkInDate = new Date(value + 'T12:00:00'); // Añadir tiempo para evitar problemas de zona horaria
+      const checkOutDate = new Date(checkInDate);
+      checkOutDate.setDate(checkInDate.getDate() + 2); // 2 noches por defecto
+      
+      // Formatear correctamente la fecha
+      const year = checkOutDate.getFullYear();
+      const month = String(checkOutDate.getMonth() + 1).padStart(2, '0');
+      const day = String(checkOutDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      setFormData(prevState => ({
+        ...prevState,
+        checkOut: formattedDate
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    console.log('🔄 SUBMIT: Iniciando proceso de envío de reserva');
+    console.log('🔄 SUBMIT: Datos del formulario:', formData);
+    console.log('🔄 SUBMIT: isAuthenticated:', isAuthenticated());
+    console.log('🔄 SUBMIT: propertyId:', propertyId);
+    console.log('🔄 SUBMIT: apartmentName:', apartmentName);
+    
+    // Verificar que el usuario esté autenticado
+    if (!isAuthenticated()) {
+      console.log('❌ SUBMIT: Usuario no autenticado');
+      alert('Debes iniciar sesión para hacer una reserva');
+      setAuthMode('login');
+      setShowAuthModal(true);
+      return;
+    }
+    
+    console.log('✅ SUBMIT: Usuario autenticado');
+    
+    const errors = validateForm();
+    setValidationErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
+      console.log('❌ SUBMIT: Errores de validación:', errors);
+      return;
+    }
+    
+    console.log('✅ SUBMIT: Validación exitosa, continuando...');
+    
+    // DEBUG: Mostrar estados actuales
+    console.log('🔍 DEBUG STATES:');
+    console.log('  - emailVerified:', emailVerified);
+    console.log('  - showEmailVerification:', showEmailVerification);
+    console.log('  - isAuthenticated:', isAuthenticated);
+    console.log('  - user:', user);
+    
+    // Paso 1: Verificación de email
+    // TEMPORALMENTE DESHABILITADA para usuarios autenticados conocidos
+    const skipEmailVerification = true; // Deshabilitar para pruebas
+    const originalSkipEmailVerification = user?.role === 'admin' || 
+                                   user?.email === 'robertogaona1985@gmail.com' ||
+                                   user?.email === 'admin@baconfort.com';
+    
+    if (!emailVerified && !skipEmailVerification) {
+      console.log('📧 SUBMIT: Email no verificado, mostrando verificación...');
+      setShowEmailVerification(true);
+      console.log('📧 SUBMIT: setShowEmailVerification(true) ejecutado');
+      return;
+    }
+    
+    if (skipEmailVerification) {
+      console.log('⏭️ SUBMIT: Saltando verificación de email (temporalmente deshabilitada)');
+    }
+    
+    console.log('✅ SUBMIT: Email verificado o saltado, continuando con el pago...');
+    proceedWithPayment();
+  };
+
+  const proceedWithPayment = () => {
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+    
+    try {
+      // En lugar de crear la reserva inmediatamente, 
+      // vamos directo al proceso de pago
+      console.log('📋 SUBMIT: Preparando datos para el pago...');
+      
+      // Usar el cálculo dinámico de precios
+      const nights = priceCalculation.nights;
+      const calculatedTotal = priceCalculation.totalPrice;
+      const currency = priceCalculation.currency;
+      
+      console.log('💰 SUBMIT: Precio calculado:', {
+        nights,
+        totalPrice: calculatedTotal,
+        currency,
+        breakdown: priceCalculation.breakdown,
+        period: priceCalculation.period
+      });
+      
+      if (priceCalculation.error) {
+        throw new Error(`Error en cálculo de precio: ${priceCalculation.error}`);
+      }
+      
+      if (calculatedTotal <= 0) {
+        throw new Error('No se pudo calcular el precio total');
+      }
+      
+      // Crear un objeto con todos los datos de la reserva para el pago
+      const reservationData = {
+        propertyId: propertyId,
+        propertyName: apartmentName,
+        checkIn: formData.checkIn,
+        checkOut: formData.checkOut,
+        guests: formData.guests,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        dni: formData.dni,
+        message: formData.message,
+        nights,
+        total: calculatedTotal,
+        currency,
+        priceBreakdown: priceCalculation.breakdown,
+        appliedRate: priceCalculation.period
+      };
+      
+      setReservationCreated(reservationData);
+      setReservationTotal(calculatedTotal);
+      setSubmitStatus('ready_for_payment');
+      setShowPayment(true);
+      
+      console.log('✅ SUBMIT: Datos preparados para pago, mostrando selector de pagos');
+      
+    } catch (error) {
+      console.error('Error preparando la reserva:', error);
+      setSubmitStatus('error');
+      alert('Error preparando la reserva. Por favor intenta nuevamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Funciones para manejar la verificación de email
+  const handleEmailVerificationSuccess = () => {
+    console.log('✅ EMAIL VERIFICATION: Email verificado exitosamente');
+    setEmailVerified(true);
+    setShowEmailVerification(false);
+    // Continuar con el proceso de pago
+    proceedWithPayment();
+  };
+
+  const handleEmailVerificationCancel = () => {
+    console.log('❌ EMAIL VERIFICATION: Verificación cancelada');
+    setShowEmailVerification(false);
+    setIsSubmitting(false);
+  };
+
+  // Funciones para manejar el pago
+  const handlePaymentSuccess = async (paymentData) => {
+    try {
+      console.log('✅ PAYMENT SUCCESS: Pago exitoso, creando reserva:', paymentData);
+      
+      // NUEVA ESTRATEGIA: Usar el endpoint de confirmación de pago que crea la reserva
+      const token = localStorage.getItem('baconfort-token');
+      const path = window.location.pathname;
+      const propertyId = path.split('/').pop();
+      
+      // Validar que tenemos al menos DNI o Pasaporte
+      const hasDNI = formData.dni && formData.dni.trim();
+      const hasPassport = formData.passport && formData.passport.trim();
+      
+      if (!hasDNI && !hasPassport) {
+        throw new Error('DNI o Pasaporte es requerido para completar la reserva');
+      }
+      
+      if (hasDNI && !/^\d{7,8}$/.test(formData.dni.trim())) {
+        throw new Error('DNI debe tener 7 u 8 dígitos');
+      }
+      
+      if (hasPassport && formData.passport.trim().length < 6) {
+        throw new Error('Pasaporte debe tener al menos 6 caracteres');
+      }
+      
+      const reservationData = {
+        // Datos básicos de la reserva
+        propertyId: propertyId,
+        propertyName: apartmentName,
+        checkIn: formData.checkIn,
+        checkOut: formData.checkOut,
+        guests: formData.guests,
+        fullName: formData.fullName,
+        userName: formData.fullName, // Agregamos userName usando el mismo valor que fullName
+        email: formData.email,
+        phone: formData.phone || '',
+        dni: formData.dni.trim(),
+        passport: formData.passport.trim(),
+        message: formData.message
+      };
+      
+      // Validar campos obligatorios
+      const requiredFields = ['propertyId', 'propertyName', 'checkIn', 'checkOut', 'guests', 'fullName', 'userName', 'email', 'dni', 'message'];
+      const missingFields = requiredFields.filter(field => !reservationData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Faltan campos obligatorios: ${missingFields.join(', ')}`);
+      }
+      
+      const confirmPaymentPayload = {
+        paymentData: {
+          provider: paymentData.provider,
+          method: paymentData.method || paymentData.provider,
+          amount: paymentData.amount || reservationTotal,
+          currency: paymentData.currency || 'USD',
+          transactionId: paymentData.transactionId || paymentData.paymentId || Date.now().toString(),
+          notes: paymentData.notes || ''
+        },
+        reservationData: reservationData
+      };
+      
+      console.log('📋 CONFIRMANDO PAGO Y CREANDO RESERVA:', confirmPaymentPayload);
+      console.log('🔍 Validación: DNI =', reservationData.dni, 'Todos los campos:', Object.keys(reservationData));
+      
+      const response = await fetch(`${API_URL}/payments/confirm-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(confirmPaymentPayload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('✅ RESERVA CREADA CON PAGO CONFIRMADO:', data);
+        
+        setSubmitStatus('success');
+        setShowPayment(false);
+        
+        // Mostrar mensaje de éxito
+        alert('¡Reserva confirmada exitosamente! Tu pago ha sido procesado y tu reserva está confirmada. El admin recibirá una notificación con toda la información incluyendo el método de pago seleccionado. Recibirás un email de confirmación en breve.');
+      } else {
+        console.error('❌ Error del servidor:', data);
+        
+        // Manejar errores específicos del servidor
+        if (data.validationErrors) {
+          const errorMessages = data.validationErrors.map(err => `${err.field}: ${err.message}`).join('\n');
+          throw new Error(`Errores de validación:\n${errorMessages}`);
+        }
+        
+        throw new Error(data.message || 'Error confirmando el pago y creando la reserva');
+      }
+    } catch (error) {
+      console.error('❌ Error creando reserva después del pago:', error);
+      
+      // Mostrar mensaje de error más específico
+      let errorMessage = 'El pago fue procesado exitosamente, pero hubo un error creando la reserva.';
+      
+      if (error.message.includes('DNI')) {
+        errorMessage = `Error con el DNI: ${error.message}. Por favor verifica que hayas ingresado tu DNI correctamente.`;
+      } else if (error.message.includes('Faltan campos')) {
+        errorMessage = `Error en los datos: ${error.message}. Por favor verifica que todos los campos estén completos.`;
+      } else if (error.message.includes('validación')) {
+        errorMessage = `Error de validación: ${error.message}`;
+      }
+      
+      alert(`❌ BACONFORT - Error en la reserva\n\n${errorMessage}\n\nPor favor contacta al soporte con esta información.`);
+    }
+  };
+
+  const handlePaymentError = (error) => {
+    console.error('❌ Error en el pago:', error);
+    setSubmitStatus('payment_error');
+    alert('Error en el proceso de pago. No se ha creado ninguna reserva. Puedes intentar nuevamente.');
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPayment(false);
+    setSubmitStatus('draft');
+    // No se ha creado ninguna reserva aún, solo volvemos al formulario
+  };
+
+  const retryPayment = () => {
+    if (reservationCreated) {
+      setShowPayment(true);
+      setSubmitStatus('ready_for_payment');
+    }
+  };
+
+  return (
+    <div className="reservation-form-container">
+      <div className="form-header">
+        <h3 className="reservation-title">
+          <i className="fas fa-calendar-alt"></i>
+          Calendario de Reservas
+        </h3>
+        <p className="form-description">
+          Confirma las fechas y completa tu reserva para {apartmentName}. 
+          Este formulario es para proceder con la reserva después de una consulta aprobada.
+        </p>
+      </div>
+      
+      {isPropertyBlocked ? (
+        <div className="property-blocked-notice">
+          <div className="blocked-notice-content">
+            <i className="fas fa-exclamation-triangle"></i>
+            <h4>Departamento temporalmente no disponible</h4>
+            <p>Este departamento está actualmente ocupado o reservado. Por favor, contacta al administrador para más información sobre disponibilidad.</p>
+            
+            <div className="contact-options">
+              <button 
+                className="whatsapp-btn"
+                onClick={() => {
+                  const message = `Hola! Me interesa consultar disponibilidad para ${apartmentName}`;
+                  window.open(`https://wa.me/541130021074?text=${encodeURIComponent(message)}`, '_blank');
+                }}
+              >
+                <i className="fab fa-whatsapp"></i>
+                Consultar por WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : !isAuthenticated() ? (
+        <div className="auth-required">
+          <div className="auth-required-content">
+            <i className="fas fa-user-lock"></i>
+            <h4>Inicia sesión para completar tu reserva</h4>
+            <p>Para procesar tu reserva de manera segura y mantener un historial de tus reservas, necesitas estar registrado.</p>
+            
+            <div className="auth-benefits">
+              <h4>Beneficios de registrarte:</h4>
+              <ul>
+                <li><i className="fas fa-check"></i> Datos autocompletados para reservas más rápidas</li>
+                <li><i className="fas fa-check"></i> Historial de todas tus reservas</li>
+                <li><i className="fas fa-check"></i> Comunicación directa y segura</li>
+                <li><i className="fas fa-check"></i> Ofertas y descuentos exclusivos</li>
+              </ul>
+            </div>
+            
+            <div className="auth-buttons">
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  console.log('🔍 LOGIN BUTTON: Clicked - Opening AuthModal');
+                  setAuthMode('login');
+                  setShowAuthModal(true);
+                  console.log('📱 MODAL: Modal de login abierto inmediatamente');
+                }}
+              >
+                <i className="fas fa-sign-in-alt"></i>
+                Iniciar Sesión
+              </button>
+              
+              <button 
+                className="btn btn-outline-primary"
+                onClick={() => {
+                  console.log('🔍 REGISTER BUTTON: Clicked - Opening AuthModal');
+                  setAuthMode('register');
+                  setShowAuthModal(true);
+                  console.log('📱 MODAL: Modal de registro abierto inmediatamente');
+                }}
+              >
+                <i className="fas fa-user-plus"></i>
+                Registrarse Gratis
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : submitStatus === 'success' ? (
+        <div className="success-message">
+          <i className="fas fa-check-circle"></i>
+          <h4>¡Solicitud de reserva enviada exitosamente!</h4>
+          <div className="contact-info">
+            <p>🎉 <strong>Tu solicitud ha sido procesada correctamente.</strong></p>
+            <p>📧 <strong>Te hemos enviado un email de confirmación</strong> con todos los detalles.</p>
+            <p>📞 Nuestro equipo te contactará pronto para confirmar la disponibilidad y finalizar tu reserva.</p>
+            
+            <div className="reservation-summary">
+              <h5><i className="fas fa-clipboard-list"></i> Resumen de tu reserva:</h5>
+              <div style={{
+                backgroundColor: '#f8f9fa',
+                padding: '15px',
+                borderRadius: '8px',
+                border: '1px solid #dee2e6',
+                fontSize: '14px',
+                lineHeight: '1.4'
+              }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '14px',
+                  fontFamily: 'inherit'
+                }}>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid #e9ecef' }}>
+                      <td style={{
+                        fontWeight: '600',
+                        color: '#495057',
+                        padding: '4px 0',
+                        width: '120px',
+                        verticalAlign: 'top'
+                      }}>🏠 Propiedad:</td>
+                      <td style={{
+                        color: '#2c3e50',
+                        fontWeight: '500',
+                        padding: '4px 0 4px 10px',
+                        verticalAlign: 'top'
+                      }}>{apartmentName}</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #e9ecef' }}>
+                      <td style={{
+                        fontWeight: '600',
+                        color: '#495057',
+                        padding: '4px 0',
+                        width: '120px',
+                        verticalAlign: 'top'
+                      }}>📅 Check-in:</td>
+                      <td style={{
+                        color: '#2c3e50',
+                        fontWeight: '500',
+                        padding: '4px 0 4px 10px',
+                        verticalAlign: 'top'
+                      }}>{formData.checkIn}</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #e9ecef' }}>
+                      <td style={{
+                        fontWeight: '600',
+                        color: '#495057',
+                        padding: '4px 0',
+                        width: '120px',
+                        verticalAlign: 'top'
+                      }}>📅 Check-out:</td>
+                      <td style={{
+                        color: '#2c3e50',
+                        fontWeight: '500',
+                        padding: '4px 0 4px 10px',
+                        verticalAlign: 'top'
+                      }}>{formData.checkOut}</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #e9ecef' }}>
+                      <td style={{
+                        fontWeight: '600',
+                        color: '#495057',
+                        padding: '4px 0',
+                        width: '120px',
+                        verticalAlign: 'top'
+                      }}>👥 Huéspedes:</td>
+                      <td style={{
+                        color: '#2c3e50',
+                        fontWeight: '500',
+                        padding: '4px 0 4px 10px',
+                        verticalAlign: 'top'
+                      }}>{formData.guests} persona(s)</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #e9ecef' }}>
+                      <td style={{
+                        fontWeight: '600',
+                        color: '#495057',
+                        padding: '4px 0',
+                        width: '120px',
+                        verticalAlign: 'top'
+                      }}>👤 Nombre:</td>
+                      <td style={{
+                        color: '#2c3e50',
+                        fontWeight: '500',
+                        padding: '4px 0 4px 10px',
+                        verticalAlign: 'top',
+                        wordBreak: 'break-word'
+                      }}>{formData.fullName}</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #e9ecef' }}>
+                      <td style={{
+                        fontWeight: '600',
+                        color: '#495057',
+                        padding: '4px 0',
+                        width: '120px',
+                        verticalAlign: 'top'
+                      }}>📧 Email:</td>
+                      <td style={{
+                        color: '#2c3e50',
+                        fontWeight: '500',
+                        padding: '4px 0 4px 10px',
+                        verticalAlign: 'top',
+                        wordBreak: 'break-all',
+                        fontSize: '13px'
+                      }}>{formData.email}</td>
+                    </tr>
+                    {formData.dni && (
+                      <tr style={{ borderBottom: '1px solid #e9ecef' }}>
+                        <td style={{
+                          fontWeight: '600',
+                          color: '#495057',
+                          padding: '4px 0',
+                          width: '120px',
+                          verticalAlign: 'top'
+                        }}>🆔 DNI:</td>
+                        <td style={{
+                          color: '#2c3e50',
+                          fontWeight: '500',
+                          padding: '4px 0 4px 10px',
+                          verticalAlign: 'top'
+                        }}>{formData.dni}</td>
+                      </tr>
+                    )}
+                    {formData.passport && (
+                      <tr style={{ borderBottom: '1px solid #e9ecef' }}>
+                        <td style={{
+                          fontWeight: '600',
+                          color: '#495057',
+                          padding: '4px 0',
+                          width: '120px',
+                          verticalAlign: 'top'
+                        }}>🛂 Pasaporte:</td>
+                        <td style={{
+                          color: '#2c3e50',
+                          fontWeight: '500',
+                          padding: '4px 0 4px 10px',
+                          verticalAlign: 'top'
+                        }}>{formData.passport}</td>
+                      </tr>
+                    )}
+                    {formData.phone && (
+                      <tr>
+                        <td style={{
+                          fontWeight: '600',
+                          color: '#495057',
+                          padding: '4px 0',
+                          width: '120px',
+                          verticalAlign: 'top'
+                        }}>📱 Teléfono:</td>
+                        <td style={{
+                          color: '#2c3e50',
+                          fontWeight: '500',
+                          padding: '4px 0 4px 10px',
+                          verticalAlign: 'top'
+                        }}>{formData.phone}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div className="next-steps">
+              <h5><i className="fas fa-info-circle"></i> Próximos pasos:</h5>
+              <ul>
+                <li>✅ Revisa tu email para la confirmación</li>
+                <li>📞 Te contactaremos en las próximas 24 horas</li>
+                <li>🏠 Confirmaremos disponibilidad y detalles finales</li>
+              </ul>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            className="reset-btn"
+            onClick={() => setSubmitStatus(null)}
+          >
+            <i className="fas fa-plus"></i>
+            Hacer otra reserva
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="reservation-form">
+          {/* Indicador de carga de fechas */}
+          {datesLoading && (
+            <div className="dates-loading">
+              <i className="fas fa-spinner fa-spin"></i>
+              Cargando fechas ocupadas...
+            </div>
+          )}
+          
+          {/* Usuario logueado - información removida para mejor experiencia de usuario */}
+          
+          <div className="date-row">
+            <div className="form-group">
+              <DatePickerWithAvailability
+                id="checkIn"
+                name="checkIn"
+                value={formData.checkIn}
+                onChange={handleChange}
+                min={today}
+                occupiedDates={occupiedDates}
+                className={validationErrors.checkIn ? 'error' : ''}
+                required
+                label="Check-in"
+              />
+              {validationErrors.checkIn && (
+                <span className="error-text">{validationErrors.checkIn}</span>
+              )}
+            </div>
+            
+            <div className="form-group">
+              <DatePickerWithAvailability
+                id="checkOut"
+                name="checkOut"
+                value={formData.checkOut}
+                onChange={handleChange}
+                min={formData.checkIn || today}
+                occupiedDates={occupiedDates}
+                className={validationErrors.checkOut ? 'error' : ''}
+                required
+                label="Check-out"
+              />
+              {validationErrors.checkOut && (
+                <span className="error-text">{validationErrors.checkOut}</span>
+              )}
+            </div>
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="guests">Huéspedes</label>
+            <select 
+              id="guests" 
+              name="guests" 
+              value={formData.guests} 
+              onChange={handleChange} 
+              required
+            >
+              <option value="1">1 huésped</option>
+              <option value="2">2 huéspedes</option>
+              <option value="3">3 huéspedes</option>
+              <option value="4">4 huéspedes</option>
+              <option value="5">5 huéspedes</option>
+              <option value="6">6+ huéspedes</option>
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="fullName">Nombre completo *</label>
+            <input 
+              type="text" 
+              id="fullName" 
+              name="fullName" 
+              value={formData.fullName} 
+              onChange={handleChange} 
+              placeholder="Tu nombre completo"
+              className={validationErrors.fullName ? 'error' : ''}
+              autoComplete="name"
+              required 
+            />
+            {validationErrors.fullName && (
+              <span className="error-text">{validationErrors.fullName}</span>
+            )}
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="email">Email *</label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              value={formData.email} 
+              onChange={handleChange} 
+              placeholder="tu@email.com"
+              className={validationErrors.email ? 'error' : ''}
+              autoComplete="email"
+              required 
+            />
+            {validationErrors.email && (
+              <span className="error-text">{validationErrors.email}</span>
+            )}
+          </div>
+          
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>
+              Identificación *
+            </label>
+            
+            {/* Dropdown de selección de tipo de documento */}
+            <div style={{ position: 'relative', marginBottom: '10px' }}>
+              <button
+                type="button"
+                className={`dropdown-toggle ${validationErrors.identification ? 'error' : ''}`}
+                style={{
+                  width: '100%',
+                  padding: '12px 15px',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  backgroundColor: '#fff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  textAlign: 'left'
+                }}
+                onClick={() => setIdentificationDropdownOpen(!identificationDropdownOpen)}
+              >
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  {selectedIdType === 'dni' && (
+                    <>
+                      <span style={{ marginRight: '8px' }}>🇦🇷</span>
+                      <span>DNI</span>
+                    </>
+                  )}
+                  {selectedIdType === 'passport' && (
+                    <>
+                      <span style={{ marginRight: '8px' }}>�</span>
+                      <span>Pasaporte</span>
+                    </>
+                  )}
+                  {!selectedIdType && (
+                    <span style={{ color: '#999' }}>Selecciona tu tipo de documento</span>
+                  )}
+                </span>
+                <span style={{ fontSize: '12px', color: '#666' }}>
+                  {identificationDropdownOpen ? '▲' : '▼'}
+                </span>
+              </button>
+              
+              {/* Opciones del dropdown */}
+              {identificationDropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: '#fff',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  zIndex: 1000,
+                  marginTop: '2px'
+                }}>
+                  <button
+                    type="button"
+                    style={{
+                      width: '100%',
+                      padding: '12px 15px',
+                      border: 'none',
+                      backgroundColor: selectedIdType === 'dni' ? '#e8f5e8' : 'transparent',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '14px',
+                      textAlign: 'left',
+                      borderRadius: '8px 8px 0 0'
+                    }}
+                    onClick={() => {
+                      setSelectedIdType('dni');
+                      setFormData(prev => ({ ...prev, passport: '', dni: prev.dni }));
+                      setIdentificationDropdownOpen(false);
+                      setTimeout(() => document.getElementById('dni')?.focus(), 100);
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = selectedIdType === 'dni' ? '#e8f5e8' : 'transparent'}
+                  >
+                    <span style={{ marginRight: '10px' }}>🇦🇷</span>
+                    <div>
+                      <div style={{ fontWeight: '500' }}>DNI</div>
+                      <div style={{ fontSize: '12px', color: '#666' }}>Documento Nacional de Identidad</div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    style={{
+                      width: '100%',
+                      padding: '12px 15px',
+                      border: 'none',
+                      backgroundColor: selectedIdType === 'passport' ? '#e8f5e8' : 'transparent',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '14px',
+                      textAlign: 'left',
+                      borderRadius: '0 0 8px 8px'
+                    }}
+                    onClick={() => {
+                      setSelectedIdType('passport');
+                      setFormData(prev => ({ ...prev, dni: '', passport: prev.passport }));
+                      setIdentificationDropdownOpen(false);
+                      setTimeout(() => document.getElementById('passport')?.focus(), 100);
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = selectedIdType === 'passport' ? '#e8f5e8' : 'transparent'}
+                  >
+                    <span style={{ marginRight: '10px' }}>🌍</span>
+                    <div>
+                      <div style={{ fontWeight: '500' }}>Pasaporte</div>
+                      <div style={{ fontSize: '12px', color: '#666' }}>Documento internacional</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Campo de entrada según la selección */}
+            {selectedIdType === 'dni' && (
+              <div>
+                <input 
+                  type="text" 
+                  id="dni" 
+                  name="dni" 
+                  value={formData.dni} 
+                  onChange={handleChange}
+                  placeholder="Ej: 12345678"
+                  className={validationErrors.dni ? 'error' : ''}
+                  maxLength="8"
+                  pattern="[0-9]*"
+                  autoComplete="off"
+                  style={{ 
+                    width: '100%', 
+                    padding: '12px 15px', 
+                    border: '1px solid #ddd', 
+                    borderRadius: '8px',
+                    fontSize: '14px'
+                  }}
+                />
+                {validationErrors.dni && (
+                  <span className="error-text" style={{ fontSize: '12px', marginTop: '5px', display: 'block' }}>
+                    {validationErrors.dni}
+                  </span>
+                )}
+                <small style={{ fontSize: '11px', color: '#666', marginTop: '5px', display: 'block' }}>
+                  Solo números, 7 u 8 dígitos
+                </small>
+              </div>
+            )}
+            
+            {selectedIdType === 'passport' && (
+              <div>
+                <input 
+                  type="text" 
+                  id="passport" 
+                  name="passport" 
+                  value={formData.passport} 
+                  onChange={handleChange}
+                  placeholder="Ej: A12345678"
+                  className={validationErrors.passport ? 'error' : ''}
+                  maxLength="20"
+                  autoComplete="off"
+                  style={{ 
+                    width: '100%', 
+                    padding: '12px 15px', 
+                    border: '1px solid #ddd', 
+                    borderRadius: '8px',
+                    textTransform: 'uppercase',
+                    fontSize: '14px'
+                  }}
+                />
+                {validationErrors.passport && (
+                  <span className="error-text" style={{ fontSize: '12px', marginTop: '5px', display: 'block' }}>
+                    {validationErrors.passport}
+                  </span>
+                )}
+                <small style={{ fontSize: '11px', color: '#666', marginTop: '5px', display: 'block' }}>
+                  Letras y números, mínimo 6 caracteres
+                </small>
+              </div>
+            )}
+            
+            {validationErrors.identification && (
+              <span className="error-text" style={{ fontSize: '12px', marginTop: '10px', display: 'block' }}>
+                {validationErrors.identification}
+              </span>
+            )}
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="phone">Teléfono (opcional)</label>
+            <input 
+              type="tel" 
+              id="phone" 
+              name="phone" 
+              value={formData.phone} 
+              onChange={handleChange} 
+              placeholder="+54 9 11 1234-5678"
+              autoComplete="tel"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="message">Mensaje *</label>
+            <textarea 
+              id="message" 
+              name="message" 
+              value={formData.message} 
+              onChange={handleChange} 
+              rows="4"
+              placeholder="Escribe tu consulta sobre disponibilidad..."
+              className={validationErrors.message ? 'error' : ''}
+              required 
+            ></textarea>
+            {validationErrors.message && (
+              <span className="error-text">{validationErrors.message}</span>
+            )}
+          </div>
+          
+          {/* Vista previa del precio */}
+          {formData.checkIn && formData.checkOut && propertyPrices && priceCalculation.totalPrice > 0 && (
+            <div className="price-preview">
+              <h4>💰 Resumen de Precio</h4>
+              <div className="price-breakdown">
+                <div className="price-summary">
+                  <span>📅 {priceCalculation.nights} noche{priceCalculation.nights !== 1 ? 's' : ''}</span>
+                  <span>🏷️ Tarifa {priceCalculation.period === 'daily' ? 'diaria' : priceCalculation.period === 'weekly' ? 'semanal' : 'mensual'}</span>
+                </div>
+                
+                {priceCalculation.breakdown && (
+                  <div className="price-details">
+                    {priceCalculation.breakdown.months && (
+                      <div className="price-line">
+                        <span>{priceCalculation.breakdown.months.count} mes{priceCalculation.breakdown.months.count !== 1 ? 'es' : ''} × {PriceService.formatPrice(priceCalculation.breakdown.months.price, priceCalculation.currency)}</span>
+                        <span>{PriceService.formatPrice(priceCalculation.breakdown.months.total, priceCalculation.currency)}</span>
+                      </div>
+                    )}
+                    {priceCalculation.breakdown.weeks && (
+                      <div className="price-line">
+                        <span>{priceCalculation.breakdown.weeks.count} semana{priceCalculation.breakdown.weeks.count !== 1 ? 's' : ''} × {PriceService.formatPrice(priceCalculation.breakdown.weeks.price, priceCalculation.currency)}</span>
+                        <span>{PriceService.formatPrice(priceCalculation.breakdown.weeks.total, priceCalculation.currency)}</span>
+                      </div>
+                    )}
+                    {priceCalculation.breakdown.days && (
+                      <div className="price-line">
+                        <span>{priceCalculation.breakdown.days.count} día{priceCalculation.breakdown.days.count !== 1 ? 's' : ''} × {PriceService.formatPrice(priceCalculation.breakdown.days.price, priceCalculation.currency)}</span>
+                        <span>{PriceService.formatPrice(priceCalculation.breakdown.days.total, priceCalculation.currency)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="price-total">
+                  <strong>Total: {PriceService.formatPrice(priceCalculation.totalPrice, priceCalculation.currency)}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {pricesLoading && (
+            <div className="price-loading">
+              <i className="fas fa-spinner fa-spin"></i>
+              <span>Calculando precio...</span>
+            </div>
+          )}
+          
+          <button 
+            type="submit" 
+            className="submit-btn" 
+            disabled={isSubmitting || pricesLoading || !propertyPrices}
+            onClick={(e) => {
+              console.log('🖱️ BUTTON: Click detectado en botón de reservar');
+              console.log('🖱️ BUTTON: isSubmitting:', isSubmitting);
+            }}
+          >
+            {isSubmitting ? 'Enviando solicitud...' : 
+             pricesLoading ? 'Calculando precio...' : 
+             !propertyPrices ? 'Cargando...' : 
+             'Reservar'}
+          </button>
+          
+
+          {submitStatus === 'payment_pending' && (
+            <div className="payment-status">
+              <i className="fas fa-credit-card"></i>
+              <p>Reserva creada exitosamente. Procede al pago para confirmarla.</p>
+            </div>
+          )}
+          
+          {submitStatus === 'error' && reservationCreated && (
+            <div className="payment-retry">
+              <p>Tu reserva está creada pero el pago falló. ¿Quieres intentar pagar nuevamente?</p>
+              <button 
+                type="button" 
+                className="retry-payment-btn"
+                onClick={retryPayment}
+              >
+                <i className="fas fa-redo"></i>
+                Reintentar pago
+              </button>
+            </div>
+          )}
+          
+          <p className="disclaimer">
+            {showPayment ? 
+              'Tu reserva está siendo procesada. Completa el pago para confirmarla.' : 
+              'Se creará una reserva pendiente de pago para asegurar las fechas seleccionadas'
+            }
+          </p>
+        </form>
+      )}
+
+      {/* Sistema de Pagos */}
+      {showPayment && reservationCreated && reservationTotal && (
+        <div className="payment-container">
+          <PaymentMethodSelector
+            reservationData={{
+              propertyName: apartmentName,
+              checkIn: formData.checkIn,
+              checkOut: formData.checkOut,
+              guests: formData.guests,
+              nights: Math.ceil((new Date(formData.checkOut) - new Date(formData.checkIn)) / (1000 * 60 * 60 * 24)),
+              amount: reservationTotal,
+              currency: 'USD',
+              reservationId: reservationCreated.id,
+              customerEmail: formData.email,
+              customerName: formData.fullName
+            }}
+            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentError={handlePaymentError}
+            onCancel={handlePaymentCancel}
+          />
+        </div>
+      )}
+
+      {/* Mensaje de éxito para reserva enviada */}
+      {submitStatus === 'pending_approval' && (
+        <div className="success-message">
+          <div className="success-content">
+            <i className="fas fa-clock"></i>
+            <h4>¡Solicitud enviada exitosamente!</h4>
+            <p>Tu reserva ha sido enviada y está siendo revisada por nuestro equipo.</p>
+            <p>Te notificaremos por email tan pronto como sea aprobada para proceder con el pago.</p>
+            
+            <div className="success-details">
+              <h5>Detalles de tu solicitud:</h5>
+              <ul>
+                <li><strong>Propiedad:</strong> {apartmentName}</li>
+                <li><strong>Check-in:</strong> {new Date(formData.checkIn).toLocaleDateString('es-ES')}</li>
+                <li><strong>Check-out:</strong> {new Date(formData.checkOut).toLocaleDateString('es-ES')}</li>
+                <li><strong>Huéspedes:</strong> {formData.guests}</li>
+                <li><strong>Estado:</strong> Pendiente de aprobación</li>
+              </ul>
+            </div>
+            
+            <div className="approval-info">
+              <h5>¿Qué sigue?</h5>
+              <ol>
+                <li>Nuestro equipo revisará tu solicitud</li>
+                <li>Verificaremos la disponibilidad de las fechas</li>
+                <li>Te enviaremos un email de confirmación</li>
+                <li>Podrás proceder con el pago una vez aprobada</li>
+              </ol>
+            </div>
+            
+            <button 
+              className="new-reservation-btn"
+              onClick={() => {
+                setSubmitStatus(null);
+                setReservationCreated(null);
+                setFormData({
+                  checkIn: '',
+                  checkOut: '',
+                  guests: '1',
+                  fullName: user?.name || '',
+                  email: user?.email || '',
+                  phone: user?.phone || '',
+                  dni: '',
+                  message: `Hola, me interesa reservar ${apartmentName}. ¿Está disponible para las fechas indicadas? Por favor contactarme a mi email o teléfono. Saludos.`
+                });
+              }}
+            >
+              Nueva solicitud
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje de éxito para pago completado */}
+      {submitStatus === 'success' && (
+        <div className="success-message">
+          <div className="success-content">
+            <i className="fas fa-check-circle"></i>
+            <h4>¡Reserva confirmada exitosamente!</h4>
+            <p>Tu pago ha sido procesado y tu reserva está confirmada.</p>
+            <p>El administrador ha recibido una notificación con todos los detalles de tu reserva incluyendo la información del pago.</p>
+            <p>Recibirás un email de confirmación con todos los detalles en breve.</p>
+            
+            <div className="success-details">
+              <h5>Detalles de tu reserva:</h5>
+              <ul>
+                <li><strong>Propiedad:</strong> {apartmentName}</li>
+                <li><strong>Check-in:</strong> {new Date(formData.checkIn).toLocaleDateString('es-ES')}</li>
+                <li><strong>Check-out:</strong> {new Date(formData.checkOut).toLocaleDateString('es-ES')}</li>
+                <li><strong>Huéspedes:</strong> {formData.guests}</li>
+                <li><strong>Total pagado:</strong> USD ${reservationTotal}</li>
+              </ul>
+            </div>
+            
+            <button 
+              className="new-reservation-btn"
+              onClick={() => {
+                setSubmitStatus(null);
+                setShowPayment(false);
+                setReservationCreated(null);
+                setReservationTotal(null);
+                setFormData({
+                  checkIn: '',
+                  checkOut: '',
+                  guests: '1',
+                  fullName: user?.name || '',
+                  email: user?.email || '',
+                  phone: user?.phone || '',
+                  dni: '',
+                  message: `Hola, me interesa reservar ${apartmentName}. ¿Está disponible para las fechas indicadas? Por favor contactarme a mi email o teléfono. Saludos.`
+                });
+              }}
+            >
+              Nueva reserva
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de autenticación */}
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode={authMode}
+      />
+
+      {/* Modal de verificación de email */}
+      {console.log('🔍 RENDER DEBUG: showEmailVerification =', showEmailVerification)}
+      {showEmailVerification && (
+        <EmailVerification
+          propertyName={apartmentName}
+          onVerificationSuccess={handleEmailVerificationSuccess}
+          onCancel={handleEmailVerificationCancel}
+          reservationData={{
+            propertyId,
+            checkIn: formData.checkIn,
+            checkOut: formData.checkOut,
+            guests: formData.guests,
+            nights: priceCalculation.nights,
+            total: priceCalculation.totalPrice
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+export default ReservationForm;

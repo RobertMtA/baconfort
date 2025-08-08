@@ -1,0 +1,300 @@
+/* EmailVerification.css */
+
+.email-verification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.verification-container {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.verification-header {
+  padding: 30px 30px 20px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.verification-header h2 {
+  margin: 0 0 15px;
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+.verification-header p {
+  margin: 10px 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.user-info {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.user-info p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #495057;
+}
+
+.sending-code {
+  padding: 40px 30px;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.verification-form {
+  padding: 30px;
+}
+
+.code-sent-info {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.success-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.code-sent-info p {
+  margin: 10px 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.check-spam {
+  font-size: 0.9rem;
+  color: #888;
+  font-style: italic;
+}
+
+.code-input-section {
+  margin-bottom: 20px;
+}
+
+.code-input-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.code-input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  text-align: center;
+  letter-spacing: 0.5rem;
+  font-weight: 600;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.code-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.code-input:disabled {
+  background: #f8f9fa;
+  opacity: 0.6;
+}
+
+.countdown {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #e74c3c;
+  text-align: center;
+}
+
+.error-message {
+  background: #ffeaea;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  color: #c62828;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.error-icon {
+  font-size: 1.2rem;
+}
+
+.verification-actions {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.verify-btn, .resend-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.verify-btn {
+  background: #27ae60;
+  color: white;
+}
+
+.verify-btn:hover:not(:disabled) {
+  background: #229954;
+  transform: translateY(-2px);
+}
+
+.verify-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.resend-btn {
+  background: #f8f9fa;
+  color: #495057;
+  border: 2px solid #e9ecef;
+}
+
+.resend-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.resend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.verification-help {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.verification-help p {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.verification-help ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.verification-help li {
+  margin: 5px 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.verification-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.cancel-verification-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-verification-btn:hover:not(:disabled) {
+  background: #c0392b;
+  transform: translateY(-2px);
+}
+
+.cancel-verification-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .email-verification {
+    padding: 10px;
+  }
+  
+  .verification-container {
+    max-height: 95vh;
+  }
+  
+  .verification-header,
+  .verification-form,
+  .verification-footer {
+    padding: 20px;
+  }
+  
+  .verification-actions {
+    flex-direction: column;
+  }
+  
+  .code-input {
+    font-size: 1.1rem;
+    letter-spacing: 0.3rem;
+  }
+}

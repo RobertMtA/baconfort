@@ -1,0 +1,23 @@
+@echo off
+echo ====================================
+echo 🚀 INICIANDO SERVIDORES BACONFORT
+echo ====================================
+echo.
+
+echo 📍 PASO 1: Iniciando Backend en Puerto 5001...
+start "BACONFORT Backend" cmd /k "cd /d c:\Users\rober\Desktop\baconfort3\baconfort-backend && npm start"
+
+echo ⏳ Esperando 3 segundos para que el backend se inicie...
+timeout /t 3 /nobreak >nul
+
+echo 📍 PASO 2: Iniciando Frontend en Puerto 3000...
+start "BACONFORT Frontend" cmd /k "cd /d c:\Users\rober\Desktop\baconfort3\baconfort-react && npm run dev"
+
+echo.
+echo ✅ SERVIDORES INICIADOS:
+echo 🔗 Backend:  http://localhost:5001
+echo 🔗 Frontend: http://localhost:3000
+echo 🔗 Admin:    http://localhost:3000/admin
+echo.
+echo 💡 Presiona cualquier tecla para cerrar...
+pause >nul

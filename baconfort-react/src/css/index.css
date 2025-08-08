@@ -1,0 +1,98 @@
+/* Estilos globales */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Prevenir FOUC (Flash of Unstyled Content) */
+html {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Optimización de fuentes */
+@font-face {
+  font-family: 'Font Awesome 6 Free';
+  font-display: swap;
+  src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2') format('woff2');
+}
+
+/* Base styles */
+:root {
+  --primary-color: #6a11cb;
+  --secondary-color: #2575fc;
+  --light-color: #f8f9fa;
+  --dark-color: #2c3e50;
+  --white: #ffffff;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Vollkorn', serif;
+  background-color: var(--light-color);
+  color: var(--dark-color);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--light-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 5px;
+}
+
+/* Utility classes */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Mejoras de rendimiento */
+img, video {
+  content-visibility: auto;
+  contain: content;
+}
+
+/* Prevenir saltos de contenido */
+main {
+  contain: layout paint;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+}
+
+/* Estilos para anuncios de Google */
+.adsbygoogle {
+  display: block;
+  margin: 1rem auto;
+  text-align: center;
+  background: transparent;
+}
+
+/* Asegurarse que los anuncios sean responsivos */
+@media (max-width: 768px) {
+  .adsbygoogle {
+    width: 100%;
+    height: auto;
+  }
+}

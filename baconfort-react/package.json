@@ -1,0 +1,52 @@
+{
+  "name": "baconfort-react",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --max-old-space-size=4096 node_modules/vite/bin/vite.js",
+    "dev": "node --max-old-space-size=4096 node_modules/vite/bin/vite.js",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "clean:cache": "npm cache clean --force",
+    "clean:modules": "rimraf node_modules",
+    "clean:lock": "rimraf package-lock.json",
+    "clean:dist": "rimraf dist",
+    "clean:install": "npm install --no-audit --no-fund --max-old-space-size=4096",
+    "clean": "npm run clean:cache && npm run clean:modules && npm run clean:lock && npm run clean:dist && npm run clean:install",
+    "start:hybrid": "node server-hybrid.js",
+    "build:hybrid": "npm run build && node server-hybrid.js"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@fortawesome/free-brands-svg-icons": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@mercadopago/sdk-react": "^1.0.3",
+    "@unhead/react": "^2.0.12",
+    "bootstrap": "^5.3.5",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "lucide-react": "^0.525.0",
+    "object-assign": "^4.1.1",
+    "react": "^19.0.0",
+    "react-bootstrap": "^2.10.9",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.5.3",
+    "styled-components": "^6.1.17"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.4.1",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "rimraf": "^6.0.1",
+    "vite": "^6.3.1"
+  }
+}

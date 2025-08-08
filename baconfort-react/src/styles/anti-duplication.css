@@ -1,0 +1,37 @@
+/* Anti-duplicación CSS específico solo para componentes de pago */
+
+/* Solo aplicar a componentes de pago específicos */
+.payment-method-selector *::before,
+.payment-method-selector *::after,
+.cash-payment-container *::before,
+.cash-payment-container *::after,
+.payment-methods *::before,
+.payment-methods *::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Reset específico para elementos con atributo data-no-duplicate */
+[data-no-duplicate]::before,
+[data-no-duplicate]::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Prevenir duplicación solo en headers de métodos de pago */
+.payment-method-card h3::before,
+.payment-method-card h3::after,
+.method-header h3::before,
+.method-header h3::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Reset específico para componentes CashPayment */
+.cash-payment-container h2::before,
+.cash-payment-container h2::after,
+.cash-payment-container h3::before,
+.cash-payment-container h3::after {
+  content: none !important;
+  display: none !important;
+}

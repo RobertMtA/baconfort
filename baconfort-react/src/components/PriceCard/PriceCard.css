@@ -1,0 +1,72 @@
+.price-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.price-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.price-header h3 {
+  color: #2c3e50;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.price-amount {
+  font-size: 2.5rem;
+  color: #3498db;
+  margin: 1.5rem 0;
+  font-weight: 700;
+}
+
+.currency {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+  vertical-align: super;
+}
+
+.price-details {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.whatsapp-button {
+  background-color: #25d366;
+  color: white;
+  padding: 0.8rem 2rem;
+  border-radius: 25px;
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.whatsapp-button:hover {
+  background-color: #128c7e;
+  color: white;
+  text-decoration: none;
+}
+
+.whatsapp-button i {
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .price-card {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .price-amount {
+    font-size: 2rem;
+  }
+}
