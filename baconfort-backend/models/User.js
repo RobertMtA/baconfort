@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'El email es obligatorio'],
-    unique: true,
+    // Quitamos unique: true para evitar índice duplicado, ya que lo definimos explícitamente abajo
     lowercase: true,
     trim: true,
     validate: [validator.isEmail, 'Formato de email inválido']
