@@ -8,19 +8,35 @@ const User = require('./models/User');
 // Importar rutas
 const propertiesRoutes = require('./routes/properties');
 const reservationsRoutes = require('./routes/reservations');
-require('dotenv').config();
+const subscribersRoutes = require('./routes/subscribers');
+require('dotenv').config({ path: 'c:\\Users\\rober\\Desktop\\baconfort3\\baconfort-backend\\.env' });
+
+console.log('🔧 DOTENV: Directorio actual:', process.cwd());
+console.log('🔧 DOTENV: Archivo server.js desde:', __dirname);
+console.log('🔧 DOTENV: Token MercadoPago:', process.env.MERCADOPAGO_ACCESS_TOKEN ? 'Configurado' : 'NO CONFIGURADO');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5004;
 
 console.log('🚀 BACONFORT Server Starting...');
 console.log('📊 Port:', PORT);
 console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
+console.log('📧 EMAIL_USER:', process.env.EMAIL_USER ? 'CONFIGURADO' : 'NO CONFIGURADO');
+console.log('📧 EMAIL_APP_PASSWORD:', process.env.EMAIL_APP_PASSWORD ? 'CONFIGURADO' : 'NO CONFIGURADO');
+console.log('📧 ADMIN_EMAIL:', process.env.ADMIN_EMAIL ? 'CONFIGURADO' : 'NO CONFIGURADO');
+console.log('📧 EMAIL_USER valor:', process.env.EMAIL_USER);
+console.log('📧 ADMIN_EMAIL valor:', process.env.ADMIN_EMAIL);
+
+// Servir archivos estáticos (imágenes subidas)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+console.log('📸 Static files served from:', path.join(__dirname, 'uploads'));
 
 // CORS configuration
 const corsOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:3003',
   'http://localhost:5173',
   'https://baconfort.netlify.app',
   'https://baconfort-frontend.vercel.app',
@@ -28,26 +44,33 @@ const corsOrigins = [
   'https://baconfort-react-4p2uq0erp-robertogaona1985-1518s-projects.vercel.app',
   'https://baconfort-react-nwahl24d6-robertogaona1985-1518s-projects.vercel.app',
   'https://olive-magpie-874253.hostingersite.com',
+  'https://plum-mink-823732.hostingersite.com', // Tu nuevo dominio Hostinger
   process.env.FRONTEND_URL
 ];
 
 // Agregar orígenes del .env si están configurados
+
 if (process.env.CORS_ORIGIN) {
   corsOrigins.push(...process.env.CORS_ORIGIN.split(','));
 }
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir solicitudes sin origin (aplicaciones móviles, Postman, etc.)
-    if (!origin) return callback(null, true);
+    // Permitir solicitudes sin origin (aplicaciones móviles, Postman, enlaces directos, etc.)
+    if (!origin) {
+      console.log('✅ CORS: Allowing request without origin (direct access/email links)');
+      return callback(null, true);
+    }
     
     // Verificar si el origin está en la lista permitida
     if (corsOrigins.filter(Boolean).includes(origin)) {
+      console.log('✅ CORS: Allowing whitelisted origin:', origin);
       return callback(null, true);
     }
     
     // Permitir cualquier subdominio de vercel.app
     if (origin.includes('vercel.app') && origin.includes('baconfort')) {
+      console.log('✅ CORS: Allowing Vercel subdomain:', origin);
       return callback(null, true);
     }
     
@@ -102,19 +125,43 @@ const connectDB = async () => {
     }
     
     console.log('🔄 Connecting to MongoDB...');
-    // Configuración para evitar advertencias de Mongoose
+    // Configuración para evitar advertencias de Mongoose y mejorar estabilidad
     mongoose.set('strictQuery', false);
+    // No deshabilitar bufferCommands para permitir que las consultas esperen la conexión
+    
     await mongoose.connect(process.env.MONGODB_URI, {
-      autoIndex: false // Evita la advertencia de índices duplicados
+      autoIndex: false, // Evita la advertencia de índices duplicados
+      serverSelectionTimeoutMS: 8000, // Timeout para selección de servidor
+      socketTimeoutMS: 45000, // Timeout para operaciones de socket
+      connectTimeoutMS: 10000, // Timeout para conexión inicial
+      maxPoolSize: 10, // Mantener hasta 10 conexiones en el pool
+      minPoolSize: 2, // Mantener al menos 2 conexiones
+      heartbeatFrequencyMS: 2000, // Verificar estado cada 2 segundos
+      retryWrites: true,
+      retryReads: true
+      // bufferCommands es true por defecto, permitiendo consultas tempranas
     });
+    
     console.log('✅ Connected to MongoDB');
+    
+    // Manejar eventos de conexión
+    mongoose.connection.on('error', err => {
+      console.error('❌ MongoDB connection error:', err.message);
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.log('⚠️ MongoDB disconnected');
+    });
+    
+    mongoose.connection.on('reconnected', () => {
+      console.log('🔄 MongoDB reconnected');
+    });
+    
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
     console.log('🔄 Running in demo mode without database');
   }
 };
-
-connectDB();
 
 // Email transporter configuration
 let emailTransporter = null;
@@ -149,7 +196,122 @@ const setupEmailTransporter = () => {
   }
 };
 
-setupEmailTransporter();
+// Función para enviar email de bienvenida
+const sendWelcomeEmail = async (userEmail, userName) => {
+  if (!emailTransporter) {
+    console.log('⚠️ Email transporter not available, skipping welcome email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: userEmail,
+      subject: '¡Bienvenido/a a Baconfort! 🏠',
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 15px; overflow: hidden;">
+          <!-- Header con gradiente y logo -->
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; opacity: 0.6;"></div>
+            <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; opacity: 0.4;"></div>
+            <div style="position: relative; z-index: 2;">
+              <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: -0.5px;">
+                🏠 ¡Bienvenido/a a Baconfort!
+              </h1>
+              <p style="color: rgba(255,255,255,0.95); margin: 10px 0 0 0; font-size: 18px; font-weight: 300;">
+                Tu plataforma de alquileres temporales de confianza
+              </p>
+            </div>
+          </div>
+          
+          <!-- Contenido principal -->
+          <div style="background: white; padding: 40px 30px; margin: 0;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px 25px; border-radius: 50px; font-size: 16px; font-weight: 600; margin-bottom: 20px;">
+                ✨ Cuenta creada exitosamente
+              </div>
+            </div>
+            
+            <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 24px; font-weight: 700;">
+              Hola ${userName}, 👋
+            </h2>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.7; margin-bottom: 25px;">
+              ¡Gracias por registrarte en <strong style="color: #667eea;">Baconfort</strong>! Tu cuenta ha sido creada exitosamente y ya puedes comenzar a disfrutar de nuestros servicios.
+            </p>
+            
+            <!-- Beneficios con iconos coloridos -->
+            <div style="background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%); padding: 25px; border-radius: 15px; margin: 25px 0; border-left: 5px solid #667eea;">
+              <h3 style="color: #667eea; margin-bottom: 20px; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
+                <span style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 14px;">🎯</span>
+                ¿Qué puedes hacer ahora?
+              </h3>
+              <div style="display: grid; gap: 15px;">
+                <div style="display: flex; align-items: center; padding: 12px; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);">
+                  <span style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 16px;">🏠</span>
+                  <span style="color: #444; font-weight: 500;">Explorar nuestras propiedades disponibles</span>
+                </div>
+                <div style="display: flex; align-items: center; padding: 12px; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);">
+                  <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 16px;">📅</span>
+                  <span style="color: #444; font-weight: 500;">Hacer reservaciones fácilmente</span>
+                </div>
+                <div style="display: flex; align-items: center; padding: 12px; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);">
+                  <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 16px;">👤</span>
+                  <span style="color: #444; font-weight: 500;">Gestionar tu perfil y preferencias</span>
+                </div>
+                <div style="display: flex; align-items: center; padding: 12px; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);">
+                  <span style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 16px;">🎁</span>
+                  <span style="color: #444; font-weight: 500;">Recibir ofertas especiales y promociones</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Botón de acción con gradiente -->
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" 
+                 style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 18px 40px; text-decoration: none; border-radius: 50px; font-weight: 700; display: inline-block; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); transition: all 0.3s ease; font-size: 16px; letter-spacing: 0.5px;">
+                ✨ Explorar Propiedades
+              </a>
+            </div>
+            
+            <!-- Mensaje de verificación -->
+            <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #10b981; border-radius: 12px; padding: 20px; margin: 25px 0; text-align: center;">
+              <h4 style="color: #059669; margin-bottom: 10px; font-size: 16px; font-weight: 600;">
+                📧 ¡Tu correo está verificado!
+              </h4>
+              <p style="color: #047857; margin: 0; font-size: 14px;">
+                No necesitas hacer nada más. Tu cuenta está lista para usar.
+              </p>
+            </div>
+            
+            <!-- Footer del contenido -->
+            <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; padding: 25px; margin-top: 30px; text-align: center; border: 1px solid #e2e8f0;">
+              <p style="color: #64748b; font-size: 14px; margin-bottom: 15px; line-height: 1.6;">
+                Si tienes alguna pregunta, no dudes en contactarnos. Estamos aquí para ayudarte.
+              </p>
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
+                <p style="color: #1e293b; font-weight: 700; margin: 0; font-size: 16px;">
+                  💜 Equipo Baconfort
+                </p>
+                <p style="color: #64748b; font-size: 12px; margin: 5px 0 0 0;">
+                  © 2025 Baconfort - Alquileres Temporales
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Welcome email sent to ${userEmail}`);
+    return { success: true };
+    
+  } catch (error) {
+    console.error('❌ Error sending welcome email:', error.message);
+    return { success: false, error: error.message };
+  }
+};
 
 // ========================================
 // RUTAS DE AUTENTICACIÓN (DEBEN IR PRIMERO)
@@ -160,7 +322,7 @@ setupEmailTransporter();
 // Registro real
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, error: 'Faltan campos requeridos' });
     }
@@ -168,7 +330,27 @@ app.post('/api/auth/register', async (req, res) => {
     if (existing) {
       return res.status(409).json({ success: false, error: 'El email ya está registrado' });
     }
-    const user = await User.create({ name, email, password });
+    
+    // Permitir especificar rol solo si es válido, sino usar 'guest' por defecto
+    const validRoles = ['guest', 'admin'];
+    const userRole = validRoles.includes(role) ? role : 'guest';
+    
+    const user = await User.create({ 
+      name, 
+      email, 
+      password, 
+      role: userRole 
+    });
+    
+    // Enviar email de bienvenida
+    console.log(`📧 Sending welcome email to ${email}`);
+    const emailResult = await sendWelcomeEmail(email, name);
+    if (emailResult.success) {
+      console.log(`✅ Welcome email sent successfully to ${email}`);
+    } else {
+      console.log(`⚠️ Could not send welcome email to ${email}: ${emailResult.error}`);
+    }
+    
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'demo-secret', { expiresIn: '7d' });
     res.json({
       success: true,
@@ -243,14 +425,45 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Helper function para manejar timeouts de MongoDB
+const withTimeout = async (promise, timeoutMs = 8000, fallback = null) => {
+  const timeout = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Operation timed out')), timeoutMs)
+  );
+  
+  try {
+    return await Promise.race([promise, timeout]);
+  } catch (error) {
+    console.warn('⚠️ MongoDB operation failed:', error.message);
+    if (fallback !== null) {
+      console.log('🔄 Using fallback data');
+      return fallback;
+    }
+    throw error;
+  }
+};
+
 // Routes
 const authRoutes = require('./routes/auth');
 const promotionsRoutes = require('./routes/promotions');
+const usersRoutes = require('./routes/users');
+const paymentsRoutes = require('./routes/payments');
+console.log('🔄 SERVER: Cargando rutas de inquiries...');
+const inquiriesRoutes = require('./routes/inquiries');
+console.log('✅ SERVER: Rutas de inquiries cargadas exitosamente');
 
 app.use('/api/properties', propertiesRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/reservations', reservationsRoutes);
 app.use('/api/promotions', promotionsRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/payments', paymentsRoutes);
+console.log('🔄 SERVER: Registrando rutas de inquiries en /api/inquiries...');
+app.use('/api/inquiries', inquiriesRoutes);
+console.log('✅ SERVER: Rutas de inquiries registradas exitosamente');
+console.log('🔄 SERVER: Registrando rutas de subscribers en /api/subscribers...');
+app.use('/api/subscribers', subscribersRoutes);
+console.log('✅ SERVER: Rutas de subscribers registradas exitosamente');
 
 // DEBUG: Endpoint especial para verificar autenticación
 app.put('/api/debug/auth-test', (req, res) => {
@@ -295,10 +508,11 @@ const authMiddleware = (req, res, next) => {
     return next();
   }
   
-  // Verificar tokens simples del sistema (igual que en middleware/auth.js)
+  // Verificar tokens simples del sistema (incluyendo tokens LOCAL_)
   if (token && (token.startsWith('admin_token_') || 
       token.startsWith('BACONFORT_ADMIN_TOKEN_') ||
       token.startsWith('session_') ||
+      token.startsWith('LOCAL_') ||
       token === 'admin_baconfort_2025' ||
       token === 'BACONFORT_ADMIN_2025_7D3F9K2L')) {
     console.log('✅ Server Token admin reconocido:', token.substring(0, 20) + '...');
@@ -339,9 +553,41 @@ function adminOnly(req, res, next) {
   }).catch(() => res.status(403).json({ success: false, error: 'Solo admin autorizado' }));
 }
 
-// Obtener usuario autenticado
+// Obtener usuario autenticado - COMENTADO: Se usa el endpoint en routes/auth.js
+/*
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
+    // Para admin temporal/demo
+    if (req.userId === 'admin_baconfort_2025' || req.userRole === 'admin') {
+      return res.json({ 
+        success: true, 
+        user: {
+          id: 'admin_baconfort_2025',
+          email: 'admin@baconfort.com',
+          role: 'admin',
+          name: 'Admin BACONFORT',
+          phone: '+54 11 3002-1074',
+          createdAt: '2025-01-15T08:00:00.000Z'
+        }
+      });
+    }
+    
+    // Para usuario Roberto temporal/demo
+    if (req.userId === 'user_roberto_2025') {
+      return res.json({ 
+        success: true, 
+        user: {
+          id: 'user_roberto_2025',
+          email: 'robertogaona1985@gmail.com',
+          role: 'user',
+          name: 'Roberto Gaona',
+          phone: '+54 11 1234-5678',
+          createdAt: '2025-06-15T09:30:00.000Z'
+        }
+      });
+    }
+    
+    // Para usuarios regulares en base de datos
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
     res.json({ success: true, user: user.toPublic() });
@@ -349,6 +595,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+*/
 
 // Recuperación de contraseña - Enviar token
 app.post('/api/auth/forgot-password', async (req, res) => {
@@ -544,30 +791,85 @@ const Property = require('./models/Property');
 const Reservation = require('./models/Reservation');
 const Review = require('./models/Review');
 
-// Properties endpoints - COMENTADO: usar el archivo de rutas routes/properties.js
-/*
+// Properties endpoints - Endpoints activos con manejo de timeout
 // Endpoint: Obtener todas las propiedades desde MongoDB
 app.get('/api/properties', async (req, res) => {
   try {
-    const properties = await Property.find({});
+    console.log('🏠 Getting properties...');
+    
+    // Array vacío como fallback - solo propiedades reales
+    const fallbackProperties = [];
+    
+    if (!mongoose.connection.readyState) {
+      console.log('🏠 Database not connected, no properties available');
+      return res.json({
+        success: true,
+        message: 'No properties available (DB disconnected)',
+        data: fallbackProperties,
+        timestamp: new Date().toISOString(),
+        demo: true
+      });
+    }
+    
+    const properties = await withTimeout(
+      Property.find({}),
+      6000, // 6 segundos timeout
+      fallbackProperties
+    );
+    
+    console.log(`🏠 Found ${properties.length} properties`);
     res.json({
       success: true,
-      message: 'Properties from database',
+      message: properties === fallbackProperties ? 'No properties available (timeout/error)' : 'Properties from database',
       data: properties,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      demo: properties === fallbackProperties
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Error getting properties:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      message: 'Error getting properties'
+    });
   }
 });
 
 // Endpoint: Obtener una propiedad por ID desde MongoDB
 app.get('/api/properties/:propertyId', async (req, res) => {
   try {
-    const property = await Property.findOne({ id: req.params.propertyId });
-    if (!property) {
-      return res.status(404).json({ success: false, error: 'Property not found', propertyId: req.params.propertyId });
+    console.log(`🏠 Getting property: ${req.params.propertyId}`);
+    
+    // Sin datos de fallback - solo propiedades reales
+    const fallbackProperty = null;
+    
+    if (!mongoose.connection.readyState) {
+      console.log('🏠 Database not connected, property not available');
+      return res.status(503).json({
+        success: false,
+        error: 'Base de datos no disponible temporalmente',
+        timestamp: new Date().toISOString(),
+        demo: true
+      });
     }
+    
+    const property = await withTimeout(
+      Property.findOne({ id: req.params.propertyId }),
+      6000,
+      null
+    );
+    
+    if (!property) {
+      console.log(`🏠 Property not found: ${req.params.propertyId}`);
+      return res.status(404).json({
+        success: false,
+        error: 'Propiedad no encontrada',
+        propertyId: req.params.propertyId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    console.log(`🏠 Found property: ${property.name || property.id}`);
     res.json({
       success: true,
       message: 'Property from database',
@@ -575,10 +877,14 @@ app.get('/api/properties/:propertyId', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Error getting property:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      propertyId: req.params.propertyId 
+    });
   }
 });
-*/
 
 // Properties management endpoints - COMENTADO: usar el endpoint real en routes/properties.js
 /*
@@ -602,15 +908,43 @@ app.put('/api/properties/:propertyId', (req, res) => {
 // Endpoint: Obtener todas las reservas desde MongoDB
 app.get('/api/reservations', async (req, res) => {
   try {
-    const reservations = await Reservation.find({});
+    console.log('📅 Getting reservations...');
+    
+    // Array vacío como fallback - solo reservas reales
+    const fallbackReservations = [];
+    
+    if (!mongoose.connection.readyState) {
+      console.log('📅 Database not connected, no reservations available');
+      return res.json({
+        success: true,
+        message: 'No reservations available (DB disconnected)',
+        data: fallbackReservations,
+        timestamp: new Date().toISOString(),
+        demo: true
+      });
+    }
+    
+    const reservations = await withTimeout(
+      Reservation.find({}),
+      6000,
+      fallbackReservations
+    );
+    
+    console.log(`📅 Found ${reservations.length} reservations`);
     res.json({
       success: true,
-      message: 'Reservations from database',
+      message: reservations === fallbackReservations ? 'No reservations available (timeout/error)' : 'Reservations from database',
       data: reservations,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      demo: reservations === fallbackReservations
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Error getting reservations:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      message: 'Error getting reservations'
+    });
   }
 });
 
@@ -687,9 +1021,9 @@ app.get('/api/reservations/my', authMiddleware, async (req, res) => {
 // Endpoint: Crear nueva reserva
 app.post('/api/reservations', authMiddleware, async (req, res) => {
   try {
-    const { propertyId, checkIn, checkOut, guests, totalPrice, notes, fullName, email, phone, message } = req.body;
+    const { propertyId, checkIn, checkOut, guests, totalPrice, notes, fullName, email, phone, dni, message } = req.body;
 
-    console.log('📝 CREATE RESERVATION: Datos recibidos:', { propertyId, checkIn, checkOut, guests, fullName, email, phone, message });
+    console.log('📝 CREATE RESERVATION: Datos recibidos:', { propertyId, checkIn, checkOut, guests, fullName, email, phone, dni, message });
 
     // Validaciones básicas
     if (!propertyId || !checkIn || !checkOut || !guests) {
@@ -699,10 +1033,10 @@ app.post('/api/reservations', authMiddleware, async (req, res) => {
       });
     }
 
-    if (!fullName || !email || !message) {
+    if (!fullName || !email || !dni || !message) {
       return res.status(400).json({
         success: false,
-        error: 'Faltan campos requeridos: fullName, email, message'
+        error: 'Faltan campos requeridos: fullName, email, dni, message'
       });
     }
 
@@ -776,6 +1110,7 @@ app.post('/api/reservations', authMiddleware, async (req, res) => {
       fullName: fullName,
       email: email,
       phone: phone || '',
+      dni: dni,
       message: message,
       
       // Estado
@@ -840,6 +1175,13 @@ app.put('/api/reservations/:id/status', authMiddleware, adminOnly, async (req, r
     reservation.status = status;
     reservation.updatedAt = new Date();
     
+    // Si se marca como completada, automáticamente marcar el pago como aprobado
+    if (status === 'completada' || status === 'completed') {
+      reservation.paymentStatus = 'approved';
+      reservation.paidAt = new Date();
+      console.log(`💰 PAYMENT AUTO-UPDATE: Pago marcado como aprobado para reserva completada ${id}`);
+    }
+    
     await reservation.save();
 
     res.json({
@@ -887,6 +1229,13 @@ app.put('/api/reservations/admin/:id/status', authMiddleware, async (req, res) =
 
     reservation.status = status;
     reservation.updatedAt = new Date();
+    
+    // Si se marca como completada, automáticamente marcar el pago como aprobado
+    if (status === 'completada' || status === 'completed') {
+      reservation.paymentStatus = 'approved';
+      reservation.paidAt = new Date();
+      console.log(`💰 PAYMENT AUTO-UPDATE: Pago marcado como aprobado para reserva completada ${id}`);
+    }
     
     await reservation.save();
 
@@ -1532,8 +1881,9 @@ app.get('/api/reviews/property/:propertyId', async (req, res) => {
   }
 });
 
-// ENDPOINTS DE GESTIÓN DE USUARIOS (Solo Admin)
+// ENDPOINTS DE GESTIÓN DE USUARIOS (Solo Admin) - COMENTADO: Ahora se usan las rutas en routes/users.js
 
+/*
 // Obtener todos los usuarios - Solo admin
 app.get('/api/users', authMiddleware, adminOnly, async (req, res) => {
   try {
@@ -1713,6 +2063,7 @@ app.get('/api/users/stats/summary', authMiddleware, adminOnly, async (req, res) 
     });
   }
 });
+*/
 
 // Root route
 app.get('/', (req, res) => {
@@ -1757,11 +2108,42 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log('🌍 Host: 0.0.0.0');
-  console.log('✅ Ready');
-});
+// Función para inicializar el servidor de forma segura
+const startServer = async () => {
+  try {
+    // Conectar a MongoDB primero
+    await connectDB();
+    
+    // Configurar email transporter
+    setupEmailTransporter();
+    
+    // Inicializar email transporter de notificaciones
+    const { initializeEmailTransporter } = require('./utils/emailNotifications');
+    initializeEmailTransporter();
+    
+    // Iniciar servidor solo después de conexiones exitosas
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log('🌍 Host: 0.0.0.0');
+      console.log('✅ Ready');
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message);
+    console.log('🔄 Starting in demo mode...');
+    
+    // Iniciar servidor en modo demo si hay errores
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT} (DEMO MODE)`);
+      console.log('🌍 Host: 0.0.0.0');
+      console.log('⚠️ Ready (without database connection)');
+    });
+  }
+};
 
-module.exports = app;
+// Inicializar servidor
+startServer();
+
+// Exportar tanto la app como el emailTransporter para uso en rutas
+module.exports = { app, emailTransporter };
+

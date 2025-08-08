@@ -49,7 +49,7 @@ const promotionSchema = new mongoose.Schema({
   durationType: {
     type: String,
     enum: ['daily', 'weekly', 'monthly', 'custom'],
-    default: 'custom'
+    default: 'monthly'
   },
   durationValue: {
     type: Number,

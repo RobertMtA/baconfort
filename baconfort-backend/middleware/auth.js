@@ -27,41 +27,56 @@ const authenticateToken = (req, res, next) => {
     });
   }
   
-  // Verificar tokens simples del sistema
+  // Verificar tokens simples del sistema (incluyendo tokens LOCAL_)
   if (token.startsWith('admin_token_') || 
       token.startsWith('BACONFORT_ADMIN_TOKEN_') ||
       token.startsWith('session_') ||
+      token.startsWith('LOCAL_') ||
       token === 'admin_baconfort_2025' ||
       token === 'BACONFORT_ADMIN_2025_7D3F9K2L') {
     console.log('✅ Token admin reconocido:', token.substring(0, 20) + '...');
     req.user = {
       id: 'admin_baconfort_2025',
       email: ADMIN_CREDENTIALS.email,
-      role: ADMIN_CREDENTIALS.role
+      role: ADMIN_CREDENTIALS.role,
+      name: 'Administrator'
     };
     return next();
   }
   
-  // Verificar tokens de usuario regular
+  // Verificar tokens de usuario regular - ESTOS SON TOKENS LEGACY, NO USAR
   if (token.startsWith('user_token_')) {
-    console.log('✅ Token usuario reconocido:', token.substring(0, 20) + '...');
-    req.user = {
-      id: 'user_roberto_2025',
-      email: 'robertogaona1985@gmail.com',
-      role: 'user',
-      name: 'Roberto Gaona',
-      phone: '+54 11 1234-5678'
-    };
-    return next();
+    console.log('⚠️ Token legacy reconocido (NO RECOMENDADO):', token.substring(0, 20) + '...');
+    console.log('⚠️ Los tokens user_token_ son legacy y deberían migrar a JWT');
+    
+    // En lugar de hardcodear, intentar extraer info del token o rechazar
+    return res.status(401).json({ 
+      success: false, 
+      error: 'Token legacy no soportado. Por favor, inicia sesión nuevamente.',
+      code: 'LEGACY_TOKEN_DEPRECATED'
+    });
   }
   
   // Verificar JWT
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       console.log('❌ Token inválido:', err.message);
+      
+      // Si es token expirado, dar información más específica
+      if (err.name === 'TokenExpiredError') {
+        console.log('⏰ Token expirado en:', new Date(err.expiredAt));
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Token expirado',
+          code: 'TOKEN_EXPIRED',
+          expiredAt: err.expiredAt
+        });
+      }
+      
       return res.status(403).json({ 
         success: false, 
-        error: 'Token inválido' 
+        error: 'Token inválido',
+        code: 'TOKEN_INVALID'
       });
     }
     
@@ -103,13 +118,9 @@ const optionalAuth = (req, res, next) => {
         role: ADMIN_CREDENTIALS.role
       };
     } else if (token.startsWith('user_token_')) {
-      req.user = {
-        id: 'user_roberto_2025',
-        email: 'robertogaona1985@gmail.com',
-        role: 'user',
-        name: 'Roberto Gaona',
-        phone: '+54 11 1234-5678'
-      };
+      // Tokens legacy - no configurar usuario automáticamente
+      console.log('⚠️ Token legacy detectado en optionalAuth - ignorando');
+      // No establecer req.user para tokens legacy
     } else {
       jwt.verify(token, JWT_SECRET, (err, user) => {
         if (!err) {
