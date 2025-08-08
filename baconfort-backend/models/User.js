@@ -71,6 +71,12 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   verificationToken: String,
+  verificationCode: String,
+  verificationCodeExpires: Date,
+  verificationAttempts: {
+    type: Number,
+    default: 0
+  },
   resetPasswordToken: String,
   resetPasswordExpires: Date
 }, {
@@ -109,6 +115,10 @@ userSchema.methods.toPublic = function() {
   delete userObject.resetPasswordExpires;
   return userObject;
 };
+
+// Eliminar índice duplicado y crear uno solo explícito
+// Esto resuelve la advertencia: "Duplicate schema index on {"email":1} found"
+userSchema.index({ email: 1 }, { unique: true, background: true });
 
 // Virtual para reviews del usuario
 userSchema.virtual('reviews', {

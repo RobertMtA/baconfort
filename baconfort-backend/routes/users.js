@@ -91,7 +91,8 @@ router.put('/:id', adminAuth, async (req, res) => {
     }
 
     // No permitir que el admin se desactive a sí mismo
-    if (user._id.toString() === req.user._id.toString() && isActive === false) {
+    const userId = req.user._id || req.user.id; // Compatibilidad con diferentes formatos de token
+    if (user._id.toString() === userId && isActive === false) {
       return res.status(400).json({
         error: 'No puedes desactivar tu propia cuenta'
       });
@@ -127,43 +128,6 @@ router.put('/:id', adminAuth, async (req, res) => {
 });
 
 // @route   DELETE /api/users/:id
-// @desc    Eliminar usuario (soft delete)
-// @access  Admin
-router.delete('/:id', adminAuth, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    
-    if (!user) {
-      return res.status(404).json({
-        error: 'Usuario no encontrado'
-      });
-    }
-
-    // No permitir que el admin se elimine a sí mismo
-    if (user._id.toString() === req.user._id.toString()) {
-      return res.status(400).json({
-        error: 'No puedes eliminar tu propia cuenta'
-      });
-    }
-
-    // Soft delete - desactivar en lugar de eliminar
-    user.isActive = false;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Usuario eliminado exitosamente'
-    });
-
-  } catch (error) {
-    console.error('Error eliminando usuario:', error);
-    res.status(500).json({
-      error: 'Error interno del servidor'
-    });
-  }
-});
-
-// @route   DELETE /api/users/:id
 // @desc    Eliminar usuario
 // @access  Admin
 router.delete('/:id', adminAuth, async (req, res) => {
@@ -179,7 +143,8 @@ router.delete('/:id', adminAuth, async (req, res) => {
     }
 
     // Prevenir que el admin se elimine a sí mismo
-    if (user._id.toString() === req.user._id.toString()) {
+    const userId = req.user._id || req.user.id; // Compatibilidad con diferentes formatos de token
+    if (user._id.toString() === userId) {
       return res.status(400).json({
         error: 'No puedes eliminar tu propia cuenta'
       });
@@ -192,7 +157,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
       });
     }
 
-    // Eliminar el usuario
+    // Eliminar el usuario completamente de la base de datos
     await User.findByIdAndDelete(id);
 
     console.log(`🗑️ Usuario eliminado: ${user.email} por admin: ${req.user.email}`);
@@ -238,7 +203,8 @@ router.put('/:id/role', adminAuth, async (req, res) => {
     }
 
     // No permitir que el admin cambie su propio rol
-    if (user._id.toString() === req.user._id.toString()) {
+    const userId = req.user._id || req.user.id; // Compatibilidad con diferentes formatos de token
+    if (user._id.toString() === userId) {
       return res.status(400).json({
         error: 'No puedes cambiar tu propio rol'
       });

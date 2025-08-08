@@ -53,8 +53,7 @@ const reviewSchema = new mongoose.Schema({
     default: null
   },
   moderatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String, // Cambiado de ObjectId a String para aceptar identificadores como 'admin_baconfort_2025'
     default: null
   },
   moderatedAt: {

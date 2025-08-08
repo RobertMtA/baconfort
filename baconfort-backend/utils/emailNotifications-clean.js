@@ -19,7 +19,7 @@ const initializeEmailTransporter = async () => {
   }
 
   try {
-    emailTransporter = nodemailer.createTransport({
+    emailTransporter = nodemailer.createTransporter({
       service: 'gmail',
       auth: {
         user: emailUser,
@@ -173,30 +173,8 @@ const sendUserReservationNotification = async (reservationData) => {
             <p style="margin: 10px 0; color: #2c3e50;">
               <strong>✅ Seña requerida:</strong> El 30% del monto total deberá ser abonado para validar la reserva.
             </p>
-            
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #dee2e6;">
-              <h5 style="color: #1565c0; margin-bottom: 12px;">🏦 Datos para Transferencia - MercadoPago</h5>
-              <ul style="list-style: none; padding: 0; margin: 0;">
-                <li style="padding: 5px 0; color: #2c3e50;">
-                  <strong>CVU:</strong> <span style="background-color: #e3f2fd; padding: 2px 6px; border-radius: 4px; font-family: monospace;">0000003100085966774521</span>
-                </li>
-                <li style="padding: 5px 0; color: #2c3e50;">
-                  <strong>Alias:</strong> <span style="background-color: #e3f2fd; padding: 2px 6px; border-radius: 4px; font-family: monospace;">baconfort.pagos</span>
-                </li>
-                <li style="padding: 5px 0; color: #2c3e50;">
-                  <strong>Titular:</strong> BaconFort Alquileres S.A.
-                </li>
-                <li style="padding: 5px 0; color: #2c3e50;">
-                  <strong>CUIT:</strong> 30-12345678-9
-                </li>
-              </ul>
-              <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9em; font-style: italic;">
-                💡 Podés usar cualquiera de los dos: CVU o Alias
-              </p>
-            </div>
-            
             <p style="margin: 10px 0; color: #2c3e50;">
-              <strong>📞 Próximos pasos:</strong> Una vez confirmada la disponibilidad, realizá la transferencia de la seña y envianos el comprobante.
+              <strong>📞 Próximos pasos:</strong> Nos pondremos en contacto contigo para confirmar la disponibilidad y coordinar el pago de la seña.
             </p>
             <p style="margin: 10px 0; color: #2c3e50;">
               <strong>⏱️ Tiempo de confirmación:</strong> Recibirás una respuesta dentro de las próximas 24 horas.

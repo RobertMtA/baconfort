@@ -133,6 +133,19 @@ const propertySchema = new mongoose.Schema({
     bookings: { type: Number, default: 0 },
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
     totalReviews: { type: Number, default: 0 }
+  },
+  // Campos para el sistema de bloqueo de propiedades
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  blockReason: {
+    type: String,
+    default: null
+  },
+  blockedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
