@@ -23,8 +23,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: './baconfort-react/package-lock.json'
+          # Deshabilitamos la caché para evitar problemas con las rutas
+          # cache: 'npm'
+          # cache-dependency-path: './baconfort-react/package-lock.json'
 
       - name: Instalar dependencias 🔧
         run: |
