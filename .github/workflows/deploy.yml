@@ -35,7 +35,7 @@ jobs:
       - name: Construir el proyecto 🏗️
         run: |
           cd baconfort-react
-          npm run build
+          npx vite build
         env:
           NODE_ENV: production
 
