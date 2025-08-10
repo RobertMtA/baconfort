@@ -7,8 +7,8 @@ async function checkAndCreateSubscribers() {
         
         // Probar diferentes endpoints
         const endpoints = [
-            'http://localhost:5004/api/subscribers',
-            'http://localhost:5004/api/subscribers/all'
+            'https://baconfort-production-084d.up.railway.app/api/subscribers',
+            'https://baconfort-production-084d.up.railway.app/api/subscribers/all'
         ];
 
         let subscribersData = null;
@@ -44,7 +44,7 @@ async function checkAndCreateSubscribers() {
             
             for (const email of testEmails) {
                 try {
-                    const subscribeResponse = await fetch('http://localhost:5004/api/subscribers/subscribe', {
+                    const subscribeResponse = await fetch('https://baconfort-production-084d.up.railway.app/api/subscribers/subscribe', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -64,7 +64,7 @@ async function checkAndCreateSubscribers() {
             console.log('\n3️⃣ Verificando suscriptores después de crear...');
             
             try {
-                const checkResponse = await fetch('http://localhost:5004/api/subscribers');
+                const checkResponse = await fetch('https://baconfort-production-084d.up.railway.app/api/subscribers');
                 const checkData = await checkResponse.json();
                 
                 if (checkData.success && checkData.data) {
@@ -92,3 +92,4 @@ async function checkAndCreateSubscribers() {
 }
 
 checkAndCreateSubscribers();
+

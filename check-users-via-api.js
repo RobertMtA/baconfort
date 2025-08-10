@@ -8,7 +8,7 @@ async function checkUsersViaAPI() {
         
         console.log('💡 Vamos a intentar registrar el usuario para ver si ya existe...\n');
         
-        const response = await fetch('http://localhost:5004/api/auth/register', {
+        const response = await fetch('https://baconfort-production-084d.up.railway.app/api/auth/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ async function checkUsersViaAPI() {
             console.log('📧 Ahora intentemos el login...\n');
             
             // Intentar login
-            const loginResponse = await fetch('http://localhost:5004/api/auth/login', {
+            const loginResponse = await fetch('https://baconfort-production-084d.up.railway.app/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -64,3 +64,4 @@ async function checkUsersViaAPI() {
 }
 
 checkUsersViaAPI();
+

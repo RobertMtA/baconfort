@@ -156,7 +156,7 @@ const sendPromotionToSubscribers = async (promotion) => {
                 <p>📧 Email: baconfort.centro@gmail.com | 🌐 Web: baconfort.com</p>
                 <p style="font-size: 0.8rem; margin-top: 15px;">
                   Recibiste este email porque estás suscrito a nuestras promociones.<br>
-                  Si no deseas recibir más emails, puedes <a href="http://localhost:5004/api/subscribers/unsubscribe/${encodeURIComponent(subscriber.email)}" style="color: #dc3545; text-decoration: underline;">darte de baja aquí</a>.
+                  Si no deseas recibir más emails, puedes <a href="https://baconfort-production-084d.up.railway.app/api/subscribers/unsubscribe/${encodeURIComponent(subscriber.email)}" style="color: #dc3545; text-decoration: underline;">darte de baja aquí</a>.
                 </p>
               </div>
             </div>
@@ -661,3 +661,4 @@ router.put('/:id/priority', adminAuth, async (req, res) => {
 });
 
 module.exports = router;
+

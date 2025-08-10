@@ -1,5 +1,5 @@
 // check-properties.js
-const API_URL = 'http://localhost:5004/api';
+const API_URL = 'https://baconfort-production-084d.up.railway.app/api';
 
 async function checkProperties() {
   try {
@@ -18,3 +18,4 @@ async function checkProperties() {
 }
 
 checkProperties();
+

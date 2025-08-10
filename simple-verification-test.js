@@ -5,7 +5,7 @@ async function simpleTest() {
     try {
         console.log('1. Probando login con usuario no verificado...');
         
-        const response = await fetch('http://localhost:5004/api/auth/login', {
+        const response = await fetch('https://baconfort-production-084d.up.railway.app/api/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -33,3 +33,4 @@ async function simpleTest() {
 }
 
 simpleTest();
+

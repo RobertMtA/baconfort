@@ -338,7 +338,7 @@ const sendWelcomeEmail = async (email) => {
           <p style="margin: 0;">💜 Equipo Baconfort</p>
           <p style="margin: 5px 0 0 0;">© 2025 Baconfort - Alquileres Temporales</p>
           <p style="margin: 10px 0 0 0; font-size: 12px;">
-            Si no deseas recibir más emails, puedes <a href="http://localhost:5004/api/subscribers/unsubscribe/${encodeURIComponent(email)}" style="color: #dc3545; text-decoration: underline;">darte de baja aquí</a>.
+            Si no deseas recibir más emails, puedes <a href="https://baconfort-production-084d.up.railway.app/api/subscribers/unsubscribe/${encodeURIComponent(email)}" style="color: #dc3545; text-decoration: underline;">darte de baja aquí</a>.
           </p>
         </div>
       </div>
@@ -375,7 +375,7 @@ ${message}
           <p style="margin: 0;">💜 Equipo Baconfort</p>
           <p style="margin: 5px 0 0 0;">© 2025 Baconfort - Alquileres Temporales</p>
           <p style="margin: 10px 0 0 0; font-size: 12px;">
-            Si no deseas recibir más emails, puedes <a href="http://localhost:5004/api/subscribers/unsubscribe/${encodeURIComponent(email)}" style="color: #dc3545; text-decoration: underline;">darte de baja aquí</a>.
+            Si no deseas recibir más emails, puedes <a href="https://baconfort-production-084d.up.railway.app/api/subscribers/unsubscribe/${encodeURIComponent(email)}" style="color: #dc3545; text-decoration: underline;">darte de baja aquí</a>.
           </p>
         </div>
       </div>
@@ -573,3 +573,4 @@ router.post('/unsubscribe/:email', allowDirectAccess, async (req, res) => {
 });
 
 module.exports = router;
+

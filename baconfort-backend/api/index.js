@@ -28,6 +28,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Endpoint de health check para monitoreo
+app.get('/api/health', (req, res) => {
+  return res.json({
+    status: 'ok',
+    version: process.env.VERSION || '1.0.0',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'production',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+  });
+});
+
 // Logging simple
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);

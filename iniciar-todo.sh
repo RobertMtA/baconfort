@@ -18,10 +18,10 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-echo "🚀 Iniciando servidor backend en puerto 5001..."
+echo "🚀 Iniciando servidor backend en puerto 5004..."
 echo "⏳ Espera unos segundos para que inicie completamente..."
 echo ""
-echo "🌐 Backend estará disponible en: http://localhost:5001"
+echo "🌐 Backend estará disponible en: http://localhost:5004"
 echo "📊 Frontend debería estar en: http://localhost:3000"
 echo ""
 echo "⚡ Para detener el servidor: Ctrl+C"
@@ -60,7 +60,7 @@ echo "✅ SISTEMA INICIADO COMPLETAMENTE"
 echo "============================================"
 echo ""
 echo "🎯 URLs para probar:"
-echo "   Backend:  http://localhost:5001"
+echo "   Backend:  http://localhost:5004"
 echo "   Frontend: http://localhost:3000"
 echo ""
 echo "🔧 Para probar las mejoras:"
@@ -81,3 +81,4 @@ echo ""
 
 # Esperar a que el usuario presione una tecla
 read -p "Presiona Enter para continuar o Ctrl+C para detener..."
+
