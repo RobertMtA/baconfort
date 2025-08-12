@@ -49,9 +49,9 @@ app.use((req, res, next) => {
 // Datos en memoria para Vercel
 const users = [
   {
-    id: 'admin-vercel',
+    id: 'admin-baconfort',
     name: 'Admin Baconfort',
-    email: 'admin@baconfort.com',
+    email: 'baconfort.centro@gmail.com',
     password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // admin123
     role: 'admin'
   }
@@ -122,7 +122,7 @@ app.post('/api/auth/login', (req, res) => {
     }
 
     // Verificación simple para admin
-    if (email === 'admin@baconfort.com' && password === 'admin123') {
+    if (email === 'baconfort.centro@gmail.com' && password === 'roccosa226') {
       const user = users[0];
       const token = 'vercel_admin_token_' + Date.now();
       

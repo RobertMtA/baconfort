@@ -26,9 +26,11 @@ const updateUserDates = async () => {
       let newDate;
       
       if (user.email === 'baconfort.centro@gmail.com') {
-        newDate = new Date('2025-06-15T09:30:00.000Z');
-      } else if (user.email === 'admin@baconfort.com' || user.role === 'admin') {
         newDate = new Date('2025-01-15T08:00:00.000Z');
+      } else if (user.role === 'admin') {
+        // Si hay otro usuario con rol de admin, cambiar su rol a 'user'
+        user.role = 'user';
+        newDate = new Date('2025-05-15T10:20:00.000Z');
       } else {
         // Para otros usuarios, generar fechas entre febrero y junio 2025
         const randomMonth = Math.floor(Math.random() * 5) + 2; // 2-6 (feb-jun)
