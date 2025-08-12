@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'baconfort_jwt_secret_super_seguro_
 
 // Admin credentials válidas
 const ADMIN_CREDENTIALS = {
-  email: 'admin@baconfort.com',
+  email: 'baconfort.centro@gmail.com',
   password: 'roccosa226',
   role: 'admin'
 };

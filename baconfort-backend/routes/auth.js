@@ -119,8 +119,8 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // Verificar credenciales admin
-    if (email.toLowerCase() === ADMIN_CREDENTIALS.email.toLowerCase() &&
+    // Verificar credenciales admin - Solo se permite baconfort.centro@gmail.com
+    if (email.toLowerCase() === 'baconfort.centro@gmail.com' &&
         password === ADMIN_CREDENTIALS.password) {
       
       const token = jwt.sign(
