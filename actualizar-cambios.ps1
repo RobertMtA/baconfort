@@ -35,8 +35,33 @@ if (-Not $allDependenciesInstalled) {
     exit 1
 }
 
+# Paso 0: Verificar archivo ads.txt
+Write-Host "`n📄 [0/3] Verificando archivo ads.txt para Google AdSense..." -ForegroundColor Cyan
+$adsContent = "google.com, pub-9166920951160128, DIRECT, f08c47fec0942fa0"
+$directories = @(
+    ".\baconfort-react\public",
+    ".\build"
+)
+foreach ($dir in $directories) {
+    if (Test-Path -Path $dir) {
+        $filePath = Join-Path -Path $dir -ChildPath "ads.txt"
+        if (Test-Path -Path $filePath) {
+            $currentContent = Get-Content -Path $filePath -Raw
+            if ($currentContent.Trim() -ne $adsContent.Trim()) {
+                Set-Content -Path $filePath -Value $adsContent
+                Write-Host "  ✅ Actualizado ads.txt en $dir" -ForegroundColor Green
+            } else {
+                Write-Host "  ✅ ads.txt verificado en $dir" -ForegroundColor Green
+            }
+        } else {
+            Set-Content -Path $filePath -Value $adsContent
+            Write-Host "  ✅ Creado ads.txt en $dir" -ForegroundColor Green
+        }
+    }
+}
+
 # Paso 1: Hacer commit de los cambios
-Write-Host "`n📤 [1/2] Guardando cambios en GitHub..." -ForegroundColor Cyan
+Write-Host "`n📤 [1/3] Guardando cambios en GitHub..." -ForegroundColor Cyan
 
 # Solicitar mensaje de commit o usar uno predeterminado
 $commitMessage = Read-Host "Introduce un mensaje para el commit (o presiona Enter para usar 'Actualización: implementación de diseño responsive')"
