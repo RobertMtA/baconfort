@@ -69,7 +69,7 @@ const withTimeout = async (promise, timeoutMs = 8000, fallback = null) => {
 router.get('/', optionalAuth, async (req, res) => {
   try {
     console.log('🏠 ROUTES: Getting properties...');
-    const { limit = 10, page = 1, sort = '-createdAt' } = req.query;
+    const { limit = 10, page = 1, sort = '-createdAt', includeBlocked = 'false' } = req.query;
     
     // Array vacío como fallback - solo propiedades reales
     const fallbackProperties = [];
@@ -93,13 +93,30 @@ router.get('/', optionalAuth, async (req, res) => {
       });
     }
     
+    // Verificar si es un administrador o si se solicita incluir propiedades bloqueadas
+    const isAdmin = req.user && req.user.role === 'admin';
+    const shouldIncludeBlocked = isAdmin || includeBlocked === 'true';
+    
+    console.log(`🔒 ROUTES: Listando propiedades - Usuario es admin: ${isAdmin}, includeBlocked: ${includeBlocked}`);
+    
+    // Construir la consulta base
+    const query = { 
+      isActive: true, 
+      status: 'active'
+    };
+    
+    // Solo filtrar propiedades bloqueadas si no es admin Y no se solicita incluirlas
+    if (!shouldIncludeBlocked) {
+      query.isBlocked = { $ne: true }; // No mostrar propiedades bloqueadas
+      console.log('🔒 ROUTES: Filtrando propiedades bloqueadas');
+    } else {
+      console.log('🔓 ROUTES: Mostrando todas las propiedades incluyendo bloqueadas');
+    }
+    
     // Intentar obtener de MongoDB con timeout
     try {
       const properties = await withTimeout(
-        Property.find({ 
-          isActive: true, 
-          status: 'active' 
-        })
+        Property.find(query)
         .sort(sort)
         .limit(limit * 1)
         .skip((page - 1) * limit)
@@ -190,16 +207,61 @@ router.get('/:id', optionalAuth, async (req, res) => {
     }
     
     try {
+      // Verificar si es un administrador
+      const isAdmin = req.user && req.user.role === 'admin';
+      
+      // Si es admin, permitir ver propiedades bloqueadas, si no, filtrarlas
+      const query = { 
+        $or: [
+          { id: req.params.id },
+          { slug: req.params.id },
+          { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null }
+        ],
+        isActive: true,
+        status: 'active'
+      };
+      
+      console.log(`🔒 ROUTES: Verificando propiedad ${req.params.id} - Usuario es admin: ${isAdmin}`);
+      
+      // Primero verificar si la propiedad existe y está bloqueada
+      const propertyCheck = await Property.findOne({
+        $or: [
+          { id: req.params.id },
+          { slug: req.params.id },
+          { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null }
+        ],
+        isActive: true,
+        status: 'active'
+      });
+      
+      console.log(`🔍 ROUTES: Estado de bloqueo para ${req.params.id}:`, {
+        isBlocked: propertyCheck?.isBlocked,
+        isAdmin: isAdmin,
+        blockReason: propertyCheck?.blockReason,
+        id: propertyCheck?.id,
+        title: propertyCheck?.title
+      });
+      
+      // Si la propiedad existe y está bloqueada y no es admin, retornar un mensaje específico
+      if (propertyCheck && propertyCheck.isBlocked === true && !isAdmin) {
+        console.log(`🔒 ROUTES: Propiedad bloqueada: ${req.params.id} - Acceso denegado`);
+        return res.status(403).json({
+          success: false,
+          error: 'Propiedad bloqueada',
+          code: 'PROPERTY_BLOCKED',
+          message: 'Esta propiedad no está disponible actualmente',
+          isBlocked: true,
+          propertyId: req.params.id
+        });
+      }
+      
+      // Solo agregar la condición de isBlocked si no es admin
+      if (!isAdmin) {
+        query.isBlocked = { $ne: true }; // No mostrar propiedades bloqueadas
+      }
+      
       const property = await withTimeout(
-        Property.findOne({ 
-          $or: [
-            { id: req.params.id },
-            { slug: req.params.id },
-            { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null }
-          ],
-          isActive: true,
-          status: 'active'
-        })
+        Property.findOne(query)
         .populate('reviews', null, { isApproved: true })
         .exec(),
         6000,
@@ -215,12 +277,14 @@ router.get('/:id', optionalAuth, async (req, res) => {
         });
       }
       
-      console.log(`🏠 ROUTES: Found property: ${property.title || property.id}`);
+      console.log(`🏠 ROUTES: Found property: ${property.title || property.id} (blocked: ${property.isBlocked ? 'YES' : 'NO'})`);
       res.json({
         success: true,
         data: property,
         timestamp: new Date().toISOString(),
-        message: 'Property from database'
+        message: 'Property from database',
+        isAdmin: isAdmin,
+        isBlocked: property.isBlocked === true
       });
     } catch (error) {
       console.error('❌ ROUTES: Error getting property:', error.message);

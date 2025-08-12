@@ -5,6 +5,10 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const User = require('./models/User');
+// Fix CORS para desarrollo (opcional)
+const fixCorsForDevelopment = process.env.ENABLE_CORS_FIX === 'true' 
+  ? require('./utils/fixCorsForDevelopment')
+  : null;
 // Importar rutas
 const propertiesRoutes = require('./routes/properties');
 const reservationsRoutes = require('./routes/reservations');
@@ -54,35 +58,42 @@ if (process.env.CORS_ORIGIN) {
   corsOrigins.push(...process.env.CORS_ORIGIN.split(','));
 }
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Permitir solicitudes sin origin (aplicaciones móviles, Postman, enlaces directos, etc.)
-    if (!origin) {
-      console.log('✅ CORS: Allowing request without origin (direct access/email links)');
-      return callback(null, true);
-    }
+// Si está habilitado el fix CORS para desarrollo, aplicarlo
+if (fixCorsForDevelopment) {
+  fixCorsForDevelopment(app);
+} else {
+  // Configuración CORS normal para producción
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Permitir solicitudes sin origin (aplicaciones móviles, Postman, enlaces directos, etc.)
+      if (!origin) {
+        console.log('✅ CORS: Allowing request without origin (direct access/email links)');
+        return callback(null, true);
+      }
+      
+      // Verificar si el origin está en la lista permitida
+      if (corsOrigins.filter(Boolean).includes(origin)) {
+        console.log('✅ CORS: Allowing whitelisted origin:', origin);
+        return callback(null, true);
+      }
     
-    // Verificar si el origin está en la lista permitida
-    if (corsOrigins.filter(Boolean).includes(origin)) {
-      console.log('✅ CORS: Allowing whitelisted origin:', origin);
-      return callback(null, true);
-    }
-    
-    console.log('❌ CORS blocked origin:', origin);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'Cache-Control', 
-    'Pragma', 
-    'Expires',
-    'X-Requested-With'
-  ],
-  optionsSuccessStatus: 200 // Para navegadores legacy
-}));
+      console.log('❌ CORS blocked origin:', origin);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'Accept',
+      'Cache-Control', 
+      'Pragma', 
+      'Expires',
+      'X-Requested-With'
+    ],
+    optionsSuccessStatus: 204 // 204 en lugar de 200 para navegadores compatibles con preflight
+  }));
+}
 
 // Basic middleware with larger limits for image uploads
 app.use(express.json({ limit: '50mb' }));
@@ -486,6 +497,16 @@ const withTimeout = async (promise, timeoutMs = 8000, fallback = null) => {
   }
 };
 
+// Importar el proxy para rutas sin prefijo /api
+console.log('🔄 SERVER: Cargando proxy de compatibilidad para rutas sin prefijo /api...');
+const proxyRoutes = require('./proxy-routes');
+console.log('✅ SERVER: Proxy de compatibilidad cargado exitosamente');
+
+// Primero configuramos las redirecciones de rutas sin prefijo /api
+console.log('🔄 SERVER: Registrando rutas proxy de compatibilidad...');
+app.use(proxyRoutes);
+console.log('✅ SERVER: Rutas proxy registradas exitosamente');
+
 // Routes
 const authRoutes = require('./routes/auth');
 const promotionsRoutes = require('./routes/promotions');
@@ -495,6 +516,7 @@ console.log('🔄 SERVER: Cargando rutas de inquiries...');
 const inquiriesRoutes = require('./routes/inquiries');
 console.log('✅ SERVER: Rutas de inquiries cargadas exitosamente');
 
+// Rutas API normales con prefijo /api
 app.use('/api/properties', propertiesRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/reservations', reservationsRoutes);
@@ -609,7 +631,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
           email: 'admin@baconfort.com',
           role: 'admin',
           name: 'Admin BACONFORT',
-          phone: '+54 11 3002-1074',
+          phone: '+54 11 4176-6377',
           createdAt: '2025-01-15T08:00:00.000Z'
         }
       });
@@ -2153,7 +2175,7 @@ app.use((error, req, res, next) => {
 
 // Función para inicializar el servidor de forma segura
 const startServer = async () => {
-  // Iniciamos el servidor inmediatamente para que el healthcheck funcione
+  // Iniciar el servidor con mejor manejo de errores
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log('🌍 Host: 0.0.0.0');
@@ -2161,6 +2183,20 @@ const startServer = async () => {
     console.log(`  - http://localhost:${PORT}/health`);
     console.log(`  - http://localhost:${PORT}/api/health`);
     console.log('✅ Server ready');
+  });
+  
+  // Manejar errores durante el inicio del servidor
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ ERROR: El puerto ${PORT} ya está en uso.`);
+      console.error(`🔄 Sugerencias para solucionar el problema:`);
+      console.error(`   1. Ejecuta el script 'restart-server.ps1' para detectar y cerrar procesos`);
+      console.error(`   2. Usa un puerto alternativo: PORT=5005 npm start`);
+      console.error(`   3. O ejecuta: .\\start-alternative-port.ps1 -Puerto 5005`);
+    } else {
+      console.error('❌ Error al iniciar el servidor:', error);
+    }
+    process.exit(1);
   });
   
   // Luego intentamos conectar a los servicios de forma no bloqueante
@@ -2192,7 +2228,7 @@ const startServer = async () => {
     console.error('❌ Error during service initialization:', error.message);
     console.log('🔄 Some services may be in demo mode...');
   }
-};
+}
 
 // Inicializar servidor
 startServer();

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Recuperación de Contraseña</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prueba de Recuperación de Contraseña</h1>
+    <p>Este es un formulario simple para probar directamente la funcionalidad de recuperación de contraseña.</p>
+    
+    <form id="password-recovery-form" name="password-recovery-form">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                required 
+                autocomplete="email"
+                placeholder="Ingresa tu correo electrónico"
+            >
+        </div>
+        
+        <button 
+            type="submit" 
+            id="submit-button"
+            name="submit-button"
+        >
+            Recuperar Contraseña
+        </button>
+    </form>
+    
+    <div id="result" class="result"></div>
+    
+    <script>
+        // Configuración - cambia esto según tu entorno
+        const API_URL = 'http://localhost:5004/api';
+        
+        document.getElementById('password-recovery-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Enviando solicitud...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `<strong>¡Éxito!</strong> ${data.message}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<strong>Error:</strong> ${data.error || 'Error desconocido'}`;
+                }
+                
+                // Información adicional para depuración
+                console.log('Respuesta completa:', data);
+                console.log('Estado HTTP:', response.status);
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<strong>Error de conexión:</strong> ${error.message}`;
+                console.error('Error detallado:', error);
+            }
+        });
+    </script>
+</body>
+</html>

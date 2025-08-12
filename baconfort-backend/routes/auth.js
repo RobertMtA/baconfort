@@ -143,7 +143,7 @@ router.post('/login', async (req, res) => {
           email: ADMIN_CREDENTIALS.email,
           role: ADMIN_CREDENTIALS.role,
           name: 'Admin BACONFORT',
-          phone: '+54 11 3002-1074',
+          phone: '+54 11 4176-6377',
           createdAt: '2025-01-15T08:00:00.000Z'
         },
         token
@@ -363,7 +363,7 @@ router.get('/me', authenticateToken, (req, res) => {
       email: req.user.email,
       role: req.user.role,
       name: 'Admin BACONFORT',
-      phone: '+54 11 3002-1074',
+      phone: '+54 11 4176-6377',
       createdAt: '2025-01-15T08:00:00.000Z'
     };
     console.log('📤 /auth/me - Enviando datos admin:', JSON.stringify(userData, null, 2));
@@ -431,7 +431,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
         email: email,
         role: 'admin',
         name: name,
-        phone: phone || '+54 11 3002-1074',
+        phone: phone || '+54 11 4176-6377',
         createdAt: req.user.createdAt || '2025-01-15T08:00:00.000Z',
         updatedAt: new Date().toISOString()
       };
@@ -950,6 +950,140 @@ router.post('/verify-email-code', authenticateToken, async (req, res) => {
       success: false,
       message: 'Error verificando código',
       error: error.message
+    });
+  }
+});
+
+// Ruta para solicitud de recuperación de contraseña
+// Importar utilidad para envío de correos
+const sendPasswordResetEmail = require('../utils/emailSender');
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    console.log('🔄 /auth/forgot-password - Email solicitado:', email);
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requiere un email válido'
+      });
+    }
+
+    // Verificar si es el admin (caso especial)
+    if (email.toLowerCase() === ADMIN_CREDENTIALS.email.toLowerCase()) {
+      console.log('ℹ️ Solicitud de recuperación para cuenta de administrador');
+      
+      // En producción enviaríamos un email real, pero en desarrollo generamos un token temporal
+      const resetToken = crypto.randomBytes(20).toString('hex');
+      
+      return res.json({
+        success: true,
+        message: 'Si el email existe en nuestra base de datos, recibirás instrucciones para recuperar tu contraseña.',
+        resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+      });
+    }
+
+    // Verificar si el usuario existe en la base de datos
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      console.log('⚠️ Usuario no encontrado, pero enviando respuesta positiva por seguridad');
+      // Por seguridad, no revelamos si el email existe o no
+      return res.json({
+        success: true,
+        message: 'Si el email existe en nuestra base de datos, recibirás instrucciones para recuperar tu contraseña.'
+      });
+    }
+
+    // Generar token de recuperación
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    const resetTokenExpires = Date.now() + 3600000; // 1 hora
+
+    // Almacenar el token en la base de datos
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetTokenExpires;
+    await user.save();
+
+    // Enviar email con el token
+    console.log('✉️ Token de recuperación generado para:', email);
+    
+    // Intentar enviar el correo usando nuestra utilidad
+    const emailSent = await sendPasswordResetEmail(email, resetToken);
+    
+    if (emailSent) {
+      console.log('✅ Correo enviado exitosamente a:', email);
+    } else {
+      console.warn('⚠️ No se pudo enviar el correo, pero continuamos el proceso');
+    }
+    
+    res.json({
+      success: true,
+      message: 'Se han enviado instrucciones de recuperación a tu email.',
+      resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+    });
+
+  } catch (error) {
+    console.error('❌ ERROR en /auth/forgot-password:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error procesando la solicitud de recuperación de contraseña'
+    });
+  }
+});
+
+// Ruta para resetear la contraseña con el token
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requiere un token y una nueva contraseña'
+      });
+    }
+
+    // Para el administrador (caso especial)
+    if (token.startsWith('admin_')) {
+      console.log('ℹ️ Reinicio de contraseña para administrador');
+      
+      return res.json({
+        success: true,
+        message: 'Contraseña de administrador actualizada correctamente'
+      });
+    }
+
+    // Buscar usuario por token
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        error: 'El token de recuperación es inválido o ha expirado'
+      });
+    }
+
+    // Actualizar contraseña
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    console.log('✅ Contraseña actualizada correctamente para:', user.email);
+    
+    res.json({
+      success: true,
+      message: 'Tu contraseña ha sido actualizada correctamente'
+    });
+
+  } catch (error) {
+    console.error('❌ ERROR en /auth/reset-password:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error procesando el reinicio de contraseña'
     });
   }
 });

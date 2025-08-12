@@ -25,9 +25,14 @@ router.get('/test', (req, res) => {
 
 /**
  * @route POST /api/payments/mercadopago/create-preference
- * @desc Crear preferencia de pago en Mercado Pago
+ * @desc Crear preferencia de pago en Mercado Pago - DESHABILITADO (solo pagos en efectivo)
  */
 router.post('/mercadopago/create-preference', authenticateToken, async (req, res) => {
+  // Responder que solo se aceptan pagos en efectivo
+  return res.status(400).json({
+    success: false,
+    message: 'Solo se aceptan pagos en efectivo. Esta función está deshabilitada.'
+  });
   try {
     console.log('🔷 Usuario autenticado:', req.user);
     console.log('🔷 Body recibido:', req.body);

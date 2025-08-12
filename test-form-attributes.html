@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Recuperación de Contraseña</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="email"] {
+            width: 100%;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            margin-top: 30px;
+            background-color: #e2f0fb;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 5px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prueba de Recuperación de Contraseña</h1>
+    
+    <div class="form-container">
+        <form id="forgot-password-form" name="forgot-password-form">
+            <div class="form-group">
+                <label for="email">Correo Electrónico:</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="Ingresa tu correo electrónico" 
+                    required 
+                    autocomplete="email"
+                >
+            </div>
+            
+            <button 
+                type="submit" 
+                id="submit-button" 
+                name="submit-button"
+            >
+                Enviar Instrucciones
+            </button>
+        </form>
+    </div>
+    
+    <div id="result" class="result" style="display:none;"></div>
+    
+    <div class="info">
+        <h3>Instrucciones:</h3>
+        <p>1. Abre la consola del navegador antes de usar este formulario (F12 o Ctrl+Shift+J)</p>
+        <p>2. Completa el formulario y haz clic en "Enviar Instrucciones"</p>
+        <p>3. Verifica si hay advertencias o errores relacionados con elementos de formulario sin atributos id/name</p>
+        <p>4. Esta prueba solo verifica problemas de autorrelleno y advertencias del navegador, no envía datos reales</p>
+    </div>
+
+    <script>
+        document.getElementById('forgot-password-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const resultDiv = document.getElementById('result');
+            
+            // Mostrar resultado
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result success';
+            resultDiv.innerHTML = `
+                <h3>Prueba Exitosa</h3>
+                <p>No se detectaron problemas con el formulario.</p>
+                <p>Si no viste advertencias en la consola sobre elementos de formulario, el problema está resuelto.</p>
+                <p><strong>Email ingresado:</strong> ${email}</p>
+            `;
+            
+            console.log('Formulario enviado exitosamente. Email:', email);
+        });
+    </script>
+</body>
+</html>

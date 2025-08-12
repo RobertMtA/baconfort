@@ -3,6 +3,7 @@ const router = express.Router();
 const Reservation = require('../models/Reservation');
 const { authenticateToken, adminAuth } = require('../middleware/auth');
 const { sendUserReservationNotification, sendAdminReservationNotification, sendUserCancellationNotification, sendAdminCancellationNotification } = require('../utils/emailNotifications');
+const { createCashPaymentInfo, calculatePriceInfo } = require('../utils/paymentDefaults');
 
 // @route   GET /api/reservations/test
 // @desc    Endpoint de prueba para verificar conectividad
@@ -75,19 +76,32 @@ router.post('/', authenticateToken, async (req, res) => {
     // Si no viene con paymentInfo, es una reserva pendiente de aprobación
     const initialStatus = paymentInfo ? 'confirmed' : 'pending';
     
-    // Procesar información de precio si está disponible
-    let finalPaymentInfo = paymentInfo;
-    if (priceInfo && priceInfo.totalAmount > 0 && !paymentInfo) {
-      // Crear información de pago básica con el precio calculado
+    // Asegurarnos de tener información de precio completa
+    const completePriceInfo = calculatePriceInfo(priceInfo, checkInDate, checkOutDate, 'ARS');
+    
+    // Procesar información de precio y configurar pago en efectivo
+    let finalPaymentInfo;
+    
+    if (completePriceInfo && completePriceInfo.totalAmount > 0) {
+      // Crear información de pago en efectivo con el precio calculado
+      finalPaymentInfo = createCashPaymentInfo(
+        completePriceInfo.totalAmount,
+        completePriceInfo.currency || 'ARS'
+      );
+    } else if (paymentInfo && paymentInfo.amount > 0) {
+      // Si ya viene información de pago, asegurarnos de que sea en efectivo
       finalPaymentInfo = {
-        amount: priceInfo.totalAmount,
-        currency: priceInfo.currency || 'USD',
-        provider: null,
-        paymentStatus: 'pending'
+        ...paymentInfo,
+        provider: 'efectivo',
+        paymentMethod: 'efectivo'
       };
+    } else {
+      // Información de pago en efectivo por defecto
+      finalPaymentInfo = createCashPaymentInfo(0, 'ARS');
     }
     
-    console.log('💳 RESERVATIONS: paymentInfo presente:', !!paymentInfo);
+    console.log('💳 RESERVATIONS: Configurando pago en efectivo');
+    console.log('💰 RESERVATIONS: Información de precio calculada:', completePriceInfo);
     console.log('💰 RESERVATIONS: priceInfo presente:', !!priceInfo);
     console.log('📊 RESERVATIONS: Estado inicial:', initialStatus);
 
@@ -133,7 +147,7 @@ router.post('/', authenticateToken, async (req, res) => {
         guests,
         message,
         paymentInfo: finalPaymentInfo,
-        priceInfo,
+        priceInfo: completePriceInfo, // Usamos la información de precio mejorada
         status: initialStatus
       };
 
@@ -844,6 +858,77 @@ router.put('/admin/:id/reset-payment', adminAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Error reseteando reserva:', error);
+    res.status(500).json({
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// @route   PUT /api/reservations/admin/:id/register-cash-payment
+// @desc    Registrar un pago en efectivo para una reserva
+// @access  Private/Admin
+router.put('/admin/:id/register-cash-payment', adminAuth, async (req, res) => {
+  try {
+    // Verificar que el usuario sea admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Acceso denegado. Solo administradores pueden registrar pagos en efectivo.'
+      });
+    }
+
+    const { amount, notes } = req.body;
+
+    if (!amount) {
+      return res.status(400).json({
+        message: 'El monto del pago es requerido'
+      });
+    }
+
+    const reservation = await Reservation.findById(req.params.id);
+    
+    if (!reservation) {
+      return res.status(404).json({
+        message: 'Reserva no encontrada'
+      });
+    }
+
+    // Registrar el pago en efectivo
+    reservation.paymentInfo = {
+      provider: 'efectivo',
+      amount: parseFloat(amount),
+      currency: 'ARS',
+      paymentMethod: 'efectivo',
+      paidAt: new Date(),
+      paymentStatus: 'approved',
+      transactionId: `CASH-${Date.now()}`
+    };
+
+    // Actualizar estado de la reserva a confirmada
+    reservation.status = 'confirmed';
+    reservation.updatedAt = new Date();
+    
+    // Si hay notas, agregarlas
+    if (notes) {
+      reservation.adminNotes = reservation.adminNotes 
+        ? `${reservation.adminNotes}\n\n[${new Date().toISOString()}] Pago en efectivo: ${notes}`
+        : `[${new Date().toISOString()}] Pago en efectivo: ${notes}`;
+    }
+
+    await reservation.save();
+
+    console.log(`✅ ADMIN: Pago en efectivo registrado para la reserva ${reservation._id}`);
+
+    res.json({
+      message: 'Pago en efectivo registrado exitosamente',
+      reservation: {
+        id: reservation._id,
+        status: reservation.status,
+        paymentInfo: reservation.paymentInfo,
+        updatedAt: reservation.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error registrando pago en efectivo:', error);
     res.status(500).json({
       message: 'Error interno del servidor'
     });
