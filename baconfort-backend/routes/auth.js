@@ -460,11 +460,42 @@ router.put('/profile', authenticateToken, async (req, res) => {
     // Actualizar datos del usuario
     user.name = name;
     user.email = email;
-    user.phone = phone;
+    user.phone = phone || ''; // Asegurarnos que phone nunca sea undefined
     user.updatedAt = new Date();
     
+    console.log('📝 Antes de guardar usuario:', {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      updatedAt: user.updatedAt
+    });
+    
     // Guardar cambios en la base de datos
-    await user.save();
+    try {
+      await user.save();
+      console.log('✅ Usuario guardado correctamente en la base de datos');
+    } catch (saveError) {
+      console.error('❌ Error al guardar usuario:', saveError);
+      // Intentar con operación directa de actualización como alternativa
+      if (saveError) {
+        console.log('🔄 Intentando actualización alternativa...');
+        const updateResult = await User.updateOne(
+          { _id: user._id }, 
+          { 
+            $set: {
+              name: name,
+              email: email,
+              phone: phone || '',
+              updatedAt: new Date()
+            }
+          }
+        );
+        console.log('✅ Resultado de actualización alternativa:', updateResult);
+      } else {
+        throw saveError;
+      }
+    }
     
     // Formato de respuesta
     const updatedUser = {
@@ -487,9 +518,32 @@ router.put('/profile', authenticateToken, async (req, res) => {
     
   } catch (error) {
     console.error('❌ Profile update error:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    
+    // Verificar si es un error de validación
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        details: errors
+      });
+    }
+    
+    // Verificar si es un error de duplicado (violación de índice único)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: 'El email ya está en uso por otro usuario',
+        field: Object.keys(error.keyPattern)[0]
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      error: 'Error interno del servidor'
+      error: 'Error interno del servidor',
+      message: error.message
     });
   }
 });

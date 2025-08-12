@@ -127,6 +127,13 @@ userSchema.virtual('reviews', {
   ref: 'Review',
   localField: '_id',
   foreignField: 'user'
+}, {
+  timestamps: true // Esto añade automáticamente createdAt y updatedAt
+});
+
+// Asegúrate que updatedAt existe manualmente también
+userSchema.add({
+  updatedAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('User', userSchema);
