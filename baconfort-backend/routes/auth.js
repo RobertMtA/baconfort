@@ -408,6 +408,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
     const { name, email, phone } = req.body;
     
     console.log('👤 /auth/profile - Actualizar perfil:', req.user?.email, { name, email, phone });
+    console.log('👤 ID del usuario desde token:', req.user.id);
     
     // Validaciones básicas
     if (!name || name.trim().length < 2) {
@@ -424,15 +425,37 @@ router.put('/profile', authenticateToken, async (req, res) => {
       });
     }
     
+    // Verificar si el ID del usuario es válido para MongoDB
+    if (!req.user.id.match(/^[0-9a-fA-F]{24}$/) && req.user.id !== 'admin_baconfort_2025') {
+      console.log('⚠️ ID de usuario inválido:', req.user.id);
+      
+      // Intentar buscar por email como alternativa
+      const userByEmail = await User.findOne({ email: req.user.email });
+      if (userByEmail) {
+        console.log('✅ Usuario encontrado por email alternativo:', userByEmail._id);
+        req.user.id = userByEmail._id;
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'ID de usuario inválido'
+        });
+      }
+    }
+    
     // Buscar usuario en la base de datos por ID
-    const user = await User.findById(req.user.id);
+    const user = req.user.id === 'admin_baconfort_2025' 
+      ? await User.findOne({ email: ADMIN_CREDENTIALS.email })
+      : await User.findById(req.user.id);
     
     if (!user) {
+      console.log('❌ Usuario no encontrado con ID:', req.user.id);
       return res.status(404).json({
         success: false,
         error: 'Usuario no encontrado'
       });
     }
+    
+    console.log('✅ Usuario encontrado:', user._id, user.email);
     
     // Actualizar datos del usuario
     user.name = name;

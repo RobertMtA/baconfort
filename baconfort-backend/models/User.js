@@ -37,7 +37,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     validate: {
       validator: function(v) {
-        return !v || validator.isMobilePhone(v);
+        // Si está vacío o no definido, es válido
+        if (!v) return true;
+        // Acepta formato local argentino o formato internacional
+        return /^\d{8,15}$/.test(v) || validator.isMobilePhone(v);
       },
       message: 'Formato de teléfono inválido'
     }
