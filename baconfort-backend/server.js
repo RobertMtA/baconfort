@@ -628,25 +628,25 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         success: true, 
         user: {
           id: 'admin_baconfort_2025',
-          email: 'admin@baconfort.com',
+          email: 'baconfort.centro@gmail.com',
           role: 'admin',
           name: 'Admin BACONFORT',
-          phone: '+54 11 4176-6377',
+          phone: '+54 11 3002-1074',
           createdAt: '2025-01-15T08:00:00.000Z'
         }
       });
     }
     
-    // Para usuario Roberto temporal/demo
+    // Para usuario BACONFORT temporal/demo
     if (req.userId === 'user_roberto_2025') {
       return res.json({ 
         success: true, 
         user: {
-          id: 'user_roberto_2025',
-          email: 'robertogaona1985@gmail.com',
+          id: 'user_baconfort_2025',
+          email: 'baconfort.centro@gmail.com',
           role: 'user',
-          name: 'Roberto Gaona',
-          phone: '+54 11 1234-5678',
+          name: 'Admin BACONFORT',
+          phone: '+54 11 3002-1074',
           createdAt: '2025-06-15T09:30:00.000Z'
         }
       });

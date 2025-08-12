@@ -204,7 +204,7 @@ const sendUserReservationNotification = async (reservationData) => {
                 <strong>⚠️ Importante:</strong> El administrador se pondrá en contacto contigo para proporcionarte los datos bancarios para realizar la transferencia de la seña.
               </p>
               <p style="margin: 10px 0; color: #555; font-size: 0.95em;">
-                Una vez recibas los datos, realiza la transferencia y envía el comprobante de pago al correo <strong>robertogaona1985@gmail.com</strong> o al WhatsApp <strong>+54 11 4176-6377</strong>.
+                Una vez recibas los datos, realiza la transferencia y envía el comprobante de pago al correo <strong>baconfort.centro@gmail.com</strong> o al WhatsApp <strong>+54 11 3002-1074</strong>.
               </p>
               <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9em; font-style: italic;">
                 💡 Recuerda incluir tu nombre y fechas de reserva en el mensaje.

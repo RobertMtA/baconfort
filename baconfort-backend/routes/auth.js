@@ -143,7 +143,7 @@ router.post('/login', async (req, res) => {
           email: ADMIN_CREDENTIALS.email,
           role: ADMIN_CREDENTIALS.role,
           name: 'Admin BACONFORT',
-          phone: '+54 11 4176-6377',
+          phone: '+54 11 3002-1074',
           createdAt: '2025-01-15T08:00:00.000Z'
         },
         token
@@ -208,7 +208,7 @@ router.post('/login', async (req, res) => {
     }
     
     // Fallback: Para el usuario específico hardcoded (temporal)
-    if (email.toLowerCase() === 'robertogaona1985@gmail.com' && password === 'password123') {
+    if (email.toLowerCase() === 'baconfort.centro@gmail.com' && password === 'password123') {
       const userId = 'user_roberto_2025';
       const token = jwt.sign(
         { 
@@ -383,10 +383,10 @@ router.get('/me', authenticateToken, (req, res) => {
       createdAt: req.user.createdAt || new Date().toISOString()
     };
     
-    // Si es Roberto, usar sus datos específicos
-    if (req.user.email === 'robertogaona1985@gmail.com') {
-      userData.name = 'Roberto Gaona';
-      userData.phone = '+54 11 1234-5678';
+    // Si es admin de baconfort, usar sus datos específicos
+    if (req.user.email === 'baconfort.centro@gmail.com') {
+      userData.name = 'Admin BACONFORT';
+      userData.phone = '+54 11 3002-1074';
       userData.createdAt = '2025-06-15T09:30:00.000Z';
     }
     
