@@ -424,39 +424,37 @@ router.put('/profile', authenticateToken, async (req, res) => {
       });
     }
     
-    // Para admin, actualizar datos especiales
-    if (req.user.role === 'admin') {
-      const updatedUser = {
-        id: req.user.id,
-        email: email,
-        role: 'admin',
-        name: name,
-        phone: phone || '+54 11 4176-6377',
-        createdAt: req.user.createdAt || '2025-01-15T08:00:00.000Z',
-        updatedAt: new Date().toISOString()
-      };
-      
-      console.log('✅ Admin profile updated:', updatedUser);
-      
-      return res.json({
-        success: true,
-        message: 'Perfil actualizado exitosamente',
-        user: updatedUser
+    // Buscar usuario en la base de datos por ID
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Usuario no encontrado'
       });
     }
     
-    // Para usuarios normales (cuando se implemente registro)
+    // Actualizar datos del usuario
+    user.name = name;
+    user.email = email;
+    user.phone = phone;
+    user.updatedAt = new Date();
+    
+    // Guardar cambios en la base de datos
+    await user.save();
+    
+    // Formato de respuesta
     const updatedUser = {
-      id: req.user.id,
-      email: email,
-      role: req.user.role,
-      name: name,
-      phone: phone,
-      createdAt: req.user.createdAt,
-      updatedAt: new Date().toISOString()
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      phone: user.phone,
+      createdAt: user.createdAt || '2025-01-15T08:00:00.000Z',
+      updatedAt: user.updatedAt.toISOString()
     };
     
-    console.log('✅ User profile updated:', updatedUser);
+    console.log('✅ User profile updated in database:', updatedUser);
     
     res.json({
       success: true,
