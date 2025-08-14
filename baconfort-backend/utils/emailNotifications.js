@@ -114,8 +114,9 @@ const sendUserReservationNotification = async (reservationData) => {
   }
 
   // Determinar el tipo de reserva
-  const isConfirmed = status === 'confirmed' && paymentInfo;
-  const statusText = isConfirmed ? 'CONFIRMADA' : 'PENDIENTE DE APROBACIÓN';
+  // Una reserva solo está confirmada si su status es 'confirmed' Y ha sido explícitamente aprobada por el admin
+  const isConfirmed = status === 'confirmed' && paymentInfo && paymentInfo.isApprovedByAdmin;
+  const statusText = isConfirmed ? 'CONFIRMADA' : 'PENDIENTE DE CONFIRMACIÓN';
   const statusColor = isConfirmed ? '#27ae60' : '#f39c12';
   const statusIcon = isConfirmed ? '✅' : '⏳';
 
@@ -130,12 +131,20 @@ const sendUserReservationNotification = async (reservationData) => {
             ${statusIcon} BaconFort - Reserva ${statusText}
           </h2>
           <p style="text-align: center; color: white; margin: 0;">
-            ${isConfirmed ? '¡Tu reserva está confirmada!' : 'Hemos recibido tu solicitud de reserva'}
+            ${isConfirmed ? '¡Tu reserva está confirmada!' : 'Tu solicitud ha sido recibida y está pendiente de confirmación'}
           </p>
         </div>
         
         <div style="background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <h3 style="color: #3498db; margin-bottom: 20px;">¡Hola ${fullName}!</h3>
+          
+          ${!isConfirmed ? `
+          <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #856404; margin: 0; font-weight: 500;">
+              📞 <strong>Próximo paso:</strong> Nuestro equipo revisará tu solicitud y se pondrá en contacto contigo dentro de las próximas 24 horas para confirmar disponibilidad y proporcionarte los datos para realizar el depósito del 30%.
+            </p>
+          </div>
+          ` : ''}
           
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h4 style="color: #2c3e50; margin-bottom: 15px;">📋 Detalles de tu Reserva:</h4>

@@ -71,10 +71,9 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    // Determinar el estado inicial y la información de pago
-    // Si viene con paymentInfo, es una reserva confirmada con pago
-    // Si no viene con paymentInfo, es una reserva pendiente de aprobación
-    const initialStatus = paymentInfo ? 'confirmed' : 'pending';
+    // Determinar el estado inicial
+    // TODAS las nuevas reservas deben ser 'pending' hasta que el admin las apruebe
+    const initialStatus = 'pending';  // Cambiado: siempre pending para nueva reserva
     
     // Asegurarnos de tener información de precio completa
     const completePriceInfo = calculatePriceInfo(priceInfo, checkInDate, checkOutDate, 'ARS');
