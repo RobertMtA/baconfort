@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambiar URL de API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+        }
+        .box {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button.red {
+            background-color: #f44336;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        .log {
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            height: 100px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cambiar URL de API</h1>
+    
+    <div class="box">
+        <h2>URL Actual</h2>
+        <p>URL de API: <strong id="current-url">Cargando...</strong></p>
+    </div>
+    
+    <div class="box">
+        <h2>Cambiar URL</h2>
+        <p>Usar proxy local (puerto 5005):</p>
+        <button onclick="setProxyUrl()">Usar Proxy (localhost:5005)</button>
+        
+        <p>Restaurar URL original:</p>
+        <button class="red" onclick="restoreOriginalUrl()">Restaurar Original (localhost:5004)</button>
+    </div>
+    
+    <div class="log" id="log"></div>
+    
+    <script>
+        // Función para mostrar mensajes en el log
+        function addLog(message) {
+            const logElement = document.getElementById('log');
+            const now = new Date().toLocaleTimeString();
+            logElement.innerHTML += `<div>[${now}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // Función para actualizar la URL mostrada
+        function updateCurrentUrl() {
+            const currentUrl = localStorage.getItem('baconfort-api-url') || 'http://localhost:5004/api';
+            document.getElementById('current-url').textContent = currentUrl;
+            addLog(`URL actual: ${currentUrl}`);
+        }
+        
+        // Función para cambiar la URL al proxy
+        function setProxyUrl() {
+            try {
+                // Guardar la URL original si aún no está guardada
+                if (!localStorage.getItem('baconfort-api-url-original')) {
+                    const currentUrl = localStorage.getItem('baconfort-api-url') || 'http://localhost:5004/api';
+                    localStorage.setItem('baconfort-api-url-original', currentUrl);
+                }
+                
+                // Establecer la nueva URL
+                localStorage.setItem('baconfort-api-url', 'http://localhost:5005/api');
+                addLog('✅ URL cambiada a http://localhost:5005/api');
+                addLog('⚠️ Recarga la aplicación para aplicar los cambios');
+                updateCurrentUrl();
+            } catch (error) {
+                addLog(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        // Función para restaurar la URL original
+        function restoreOriginalUrl() {
+            try {
+                const originalUrl = localStorage.getItem('baconfort-api-url-original') || 'http://localhost:5004/api';
+                localStorage.setItem('baconfort-api-url', originalUrl);
+                addLog(`✅ URL restaurada a ${originalUrl}`);
+                addLog('⚠️ Recarga la aplicación para aplicar los cambios');
+                updateCurrentUrl();
+            } catch (error) {
+                addLog(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        // Inicializar la página
+        window.onload = updateCurrentUrl;
+    </script>
+</body>
+</html>

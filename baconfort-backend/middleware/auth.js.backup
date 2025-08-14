@@ -179,57 +179,6 @@ const optionalAuth = (req, res, next) => {
 
 // Alias para compatibilidad - Combina auth + admin
 const adminAuth = (req, res, next) => {
-  console.log('🔑 AdminAuth: INICIANDO VERIFICACIÓN');
-  console.log('🔑 AdminAuth: URL:', req.originalUrl);
-  console.log('🔑 AdminAuth: Método:', req.method);
-  
-  // Verificar header de emergencia adicional
-  const emergencyToken = req.headers['x-admin-emergency-token'];
-  const adminAccess = req.headers['x-admin-access'];
-  const tokenOverride = req.headers['x-token-override'];
-  const queryEmergency = req.query.emergency;
-  const queryBypass = req.query.bypass;
-  
-  console.log('🔑 AdminAuth: Headers completos:', {
-    'x-admin-emergency-token': emergencyToken || 'NO PRESENTE',
-    'x-admin-access': adminAccess || 'NO PRESENTE',
-    'x-token-override': tokenOverride || 'NO PRESENTE',
-    'authorization': req.headers['authorization'] ? 'PRESENTE' : 'NO PRESENTE'
-  });
-  
-  console.log('🔑 AdminAuth: Query params:', {
-    'emergency': queryEmergency || 'NO PRESENTE',
-    'bypass': queryBypass || 'NO PRESENTE',
-    'admin': req.query.admin || 'NO PRESENTE'
-  });
-  
-  // Si hay token de emergencia, permitir acceso directo
-  if (emergencyToken === 'ADMIN_BYPASS_TOKEN_EMERGENCY_ACCESS' || 
-      queryEmergency === 'true' || 
-      queryBypass === 'true' ||
-      adminAccess === 'admin') {
-    console.log('⚠️ ADVERTENCIA: BYPASS DE EMERGENCIA ACTIVADO en adminAuth');
-    console.log('⚠️ Condición que activó bypass:', {
-      emergencyToken: emergencyToken === 'ADMIN_BYPASS_TOKEN_EMERGENCY_ACCESS',
-      queryEmergency: queryEmergency === 'true',
-      queryBypass: queryBypass === 'true',
-      adminAccess: adminAccess === 'admin'
-    });
-    
-    req.user = {
-      id: 'admin_emergency_bypass',
-      email: ADMIN_CREDENTIALS.email,
-      role: 'admin',
-      name: 'Emergency Admin',
-      bypassEmergency: true
-    };
-    
-    console.log('✅ AdminAuth: Usuario bypass establecido:', req.user);
-    return next();
-  }
-  
-  console.log('❌ AdminAuth: No se activó bypass, continuando con autenticación normal');
-  
   // Primero autenticar
   authenticateToken(req, res, (err) => {
     if (err) return; // Si hay error, authenticateToken ya manejó la respuesta
@@ -247,4 +196,3 @@ module.exports = {
   ADMIN_CREDENTIALS,
   JWT_SECRET
 };
-

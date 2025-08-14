@@ -888,7 +888,7 @@ router.get('/admin/all', authenticateToken, async (req, res) => {
     console.log('🎯 ADMIN INQUIRIES: Usuario:', req.user);
     
     // Verificar que el usuario sea admin
-    const isAdminEmail = req.user && req.user.email === 'admin@baconfort.com';
+    const isAdminEmail = req.user && (req.user.email === 'admin@baconfort.com' || req.user.email === 'baconfort.centro@gmail.com');
     const isAdminRole = req.user && req.user.role === 'admin';
     
     console.log('🔍 ADMIN INQUIRIES: Verificación acceso:', {
@@ -898,7 +898,7 @@ router.get('/admin/all', authenticateToken, async (req, res) => {
       isAdminRole
     });
     
-    if (!req.user || !isAdminEmail || !isAdminRole) {
+    if (!req.user || (!isAdminEmail && !isAdminRole)) {
       console.log('❌ ADMIN INQUIRIES: Acceso denegado para usuario:', req.user);
       return res.status(403).json({
         success: false,

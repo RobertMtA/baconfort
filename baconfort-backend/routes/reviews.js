@@ -274,6 +274,9 @@ router.get('/admin/all', adminAuth, async (req, res) => {
 // @access  Admin
 router.get('/admin', adminAuth, async (req, res) => {
   try {
+    console.log('🔍 REVIEWS ADMIN: Endpoint alcanzado exitosamente');
+    console.log('🔍 REVIEWS ADMIN: Usuario autenticado:', req.user);
+    
     const { status = 'all', limit = 20, page = 1, sort = '-createdAt' } = req.query;
     
     let filter = {};

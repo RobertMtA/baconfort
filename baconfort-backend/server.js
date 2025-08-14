@@ -89,7 +89,10 @@ if (fixCorsForDevelopment) {
       'Cache-Control', 
       'Pragma', 
       'Expires',
-      'X-Requested-With'
+      'X-Requested-With',
+      'x-admin-access',
+      'x-admin-emergency-token',
+      'x-token-override'
     ],
     optionsSuccessStatus: 204 // 204 en lugar de 200 para navegadores compatibles con preflight
   }));
@@ -512,6 +515,9 @@ const authRoutes = require('./routes/auth');
 const promotionsRoutes = require('./routes/promotions');
 const usersRoutes = require('./routes/users');
 const paymentsRoutes = require('./routes/payments');
+console.log('🔄 SERVER: Cargando rutas de reviews...');
+const reviewsRoutes = require('./routes/reviews');
+console.log('✅ SERVER: Rutas de reviews cargadas exitosamente');
 console.log('🔄 SERVER: Cargando rutas de inquiries...');
 const inquiriesRoutes = require('./routes/inquiries');
 console.log('✅ SERVER: Rutas de inquiries cargadas exitosamente');
@@ -523,6 +529,9 @@ app.use('/api/reservations', reservationsRoutes);
 app.use('/api/promotions', promotionsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/payments', paymentsRoutes);
+console.log('🔄 SERVER: Registrando rutas de reviews en /api/reviews...');
+app.use('/api/reviews', reviewsRoutes);
+console.log('✅ SERVER: Rutas de reviews registradas exitosamente');
 console.log('🔄 SERVER: Registrando rutas de inquiries en /api/inquiries...');
 app.use('/api/inquiries', inquiriesRoutes);
 console.log('✅ SERVER: Rutas de inquiries registradas exitosamente');
@@ -1319,7 +1328,8 @@ app.put('/api/reservations/admin/:id/status', authMiddleware, async (req, res) =
   }
 });
 
-// RUTAS DE ADMINISTRACIÓN DE REVIEWS (deben ir antes de las rutas con parámetros)
+// RUTAS DE ADMINISTRACIÓN DE REVIEWS - COMENTADO: Ahora se usan las rutas en routes/reviews.js
+/*
 // Obtener reseñas pendientes de moderación
 app.get('/api/reviews/admin/pending', authMiddleware, adminOnly, async (req, res) => {
   try {
@@ -1945,6 +1955,7 @@ app.get('/api/reviews/property/:propertyId', async (req, res) => {
     });
   }
 });
+*/
 
 // ENDPOINTS DE GESTIÓN DE USUARIOS (Solo Admin) - COMENTADO: Ahora se usan las rutas en routes/users.js
 
@@ -2233,6 +2244,8 @@ const startServer = async () => {
 // Inicializar servidor
 startServer();
 
-// Exportar tanto la app como el emailTransporter para uso en rutas
-module.exports = { app, emailTransporter };
+// Solo exportar si se está ejecutando como módulo, no como script principal
+if (require.main !== module) {
+  module.exports = { app, emailTransporter };
+}
 

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramientas de Desarrollo Local</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .button.secondary {
+            background-color: #555;
+        }
+        .button.secondary:hover {
+            background-color: #333;
+        }
+        .console {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin-top: 20px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log {
+            margin: 5px 0;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .warning {
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>Herramientas de Desarrollo Local</h1>
+    
+    <div class="card">
+        <h2>Proxy de Autenticación Local</h2>
+        <p>Esta herramienta te permite usar el proxy de autenticación local para resolver problemas con los tokens en el entorno de desarrollo.</p>
+        
+        <button class="button" onclick="cambiarUrlAPI()">Usar Proxy de Autenticación</button>
+        <button class="button secondary" onclick="restaurarUrlAPI()">Restaurar URL Original</button>
+    </div>
+
+    <div class="card">
+        <h2>Información Actual</h2>
+        <p><strong>URL de API actual:</strong> <span id="urlActual">-</span></p>
+        <p><strong>URL original guardada:</strong> <span id="urlOriginal">-</span></p>
+    </div>
+    
+    <div class="console" id="consola">
+        <div class="log">Consola de registro...</div>
+    </div>
+
+    <script>
+        // Función para mostrar mensaje en la consola
+        function log(mensaje, tipo = 'normal') {
+            const consola = document.getElementById('consola');
+            const logElement = document.createElement('div');
+            logElement.className = `log ${tipo}`;
+            logElement.textContent = mensaje;
+            consola.appendChild(logElement);
+            consola.scrollTop = consola.scrollHeight;
+        }
+
+        // Función para actualizar la información actual
+        function actualizarInfo() {
+            document.getElementById('urlActual').textContent = localStorage.getItem('baconfort-api-url') || 'No definida';
+            document.getElementById('urlOriginal').textContent = localStorage.getItem('baconfort-api-url-original') || 'No guardada';
+        }
+
+        // Función para cambiar la URL de la API
+        function cambiarUrlAPI() {
+            try {
+                const urlOriginal = localStorage.getItem('baconfort-api-url') || 'http://localhost:5004/api';
+  
+                if (urlOriginal !== 'http://localhost:5005/api') {
+                    localStorage.setItem('baconfort-api-url-original', urlOriginal);
+                    localStorage.setItem('baconfort-api-url', 'http://localhost:5005/api');
+                    log('✅ URL de API cambiada a http://localhost:5005/api', 'success');
+                    log('🔄 Por favor, recarga la aplicación para aplicar los cambios', 'warning');
+                } else {
+                    log('✓ La URL de API ya está configurada correctamente', 'success');
+                }
+                
+                actualizarInfo();
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Función para restaurar la URL original
+        function restaurarUrlAPI() {
+            try {
+                const urlOriginal = localStorage.getItem('baconfort-api-url-original');
+  
+                if (urlOriginal) {
+                    localStorage.setItem('baconfort-api-url', urlOriginal);
+                    log(`✅ URL de API restaurada a ${urlOriginal}`, 'success');
+                    log('🔄 Por favor, recarga la aplicación para aplicar los cambios', 'warning');
+                    
+                    // Limpiar la URL guardada
+                    localStorage.removeItem('baconfort-api-url-original');
+                } else {
+                    log('⚠️ No se encontró una URL de API original guardada', 'warning');
+                }
+                
+                actualizarInfo();
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Inicializar la información al cargar la página
+        window.onload = actualizarInfo;
+    </script>
+</body>
+</html>
