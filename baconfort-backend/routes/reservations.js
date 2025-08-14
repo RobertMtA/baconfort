@@ -3,7 +3,8 @@ const router = express.Router();
 const Reservation = require('../models/Reservation');
 const { authenticateToken, adminAuth } = require('../middleware/auth');
 const { sendUserReservationNotification, sendAdminReservationNotification, sendUserCancellationNotification, sendAdminCancellationNotification } = require('../utils/emailNotifications');
-const { createCashPaymentInfo, calculatePriceInfo } = require('../utils/paymentDefaults');
+const { createCashPaymentInfo } = require('../utils/paymentDefaults');
+const { calculatePriceByProperty } = require('../utils/priceCalculator');
 
 // @route   GET /api/reservations/test
 // @desc    Endpoint de prueba para verificar conectividad
@@ -75,8 +76,8 @@ router.post('/', authenticateToken, async (req, res) => {
     // TODAS las nuevas reservas deben ser 'pending' hasta que el admin las apruebe
     const initialStatus = 'pending';  // Cambiado: siempre pending para nueva reserva
     
-    // Asegurarnos de tener información de precio completa
-    const completePriceInfo = calculatePriceInfo(priceInfo, checkInDate, checkOutDate, 'ARS');
+    // Calcular precio usando el sistema específico por propiedad
+    const completePriceInfo = calculatePriceByProperty(propertyId, checkInDate, checkOutDate);
     
     // Procesar información de precio y configurar pago en efectivo
     let finalPaymentInfo;
