@@ -26,6 +26,8 @@ router.post('/', authenticateToken, async (req, res) => {
     console.log('📝 RESERVATIONS: Iniciando creación de reserva');
     console.log('📝 RESERVATIONS: Datos recibidos:', req.body);
     console.log('📝 RESERVATIONS: Usuario autenticado:', req.user);
+    console.log('🔍 DEBUG FULLNAME: fullName recibido =', req.body.fullName);
+    console.log('🔍 DEBUG USER: userName del token =', req.user?.name);
     
     const {
       propertyId,
@@ -79,6 +81,11 @@ router.post('/', authenticateToken, async (req, res) => {
     // Calcular precio usando el sistema específico por propiedad
     const completePriceInfo = calculatePriceByProperty(propertyId, checkInDate, checkOutDate);
     
+    console.log('💰 PRECIO DEBUG - propertyId:', propertyId);
+    console.log('💰 PRECIO DEBUG - completePriceInfo:', completePriceInfo);
+    console.log('💰 PRECIO DEBUG - totalAmount:', completePriceInfo?.totalAmount);
+    console.log('💰 PRECIO DEBUG - currency:', completePriceInfo?.currency);
+    
     // Procesar información de precio y configurar pago en efectivo
     let finalPaymentInfo;
     
@@ -86,8 +93,9 @@ router.post('/', authenticateToken, async (req, res) => {
       // Crear información de pago en efectivo con el precio calculado
       finalPaymentInfo = createCashPaymentInfo(
         completePriceInfo.totalAmount,
-        completePriceInfo.currency || 'ARS'
+        completePriceInfo.currency || 'USD'
       );
+      console.log('💰 PRECIO DEBUG - Usando precio calculado:', completePriceInfo.totalAmount);
     } else if (paymentInfo && paymentInfo.amount > 0) {
       // Si ya viene información de pago, asegurarnos de que sea en efectivo
       finalPaymentInfo = {
@@ -95,9 +103,11 @@ router.post('/', authenticateToken, async (req, res) => {
         provider: 'efectivo',
         paymentMethod: 'efectivo'
       };
+      console.log('💰 PRECIO DEBUG - Usando paymentInfo:', paymentInfo.amount);
     } else {
       // Información de pago en efectivo por defecto
-      finalPaymentInfo = createCashPaymentInfo(0, 'ARS');
+      finalPaymentInfo = createCashPaymentInfo(0, 'USD');
+      console.log('⚠️ PRECIO DEBUG - FALLBACK - Sin precio válido, usando 0');
     }
     
     console.log('💳 RESERVATIONS: Configurando pago en efectivo');

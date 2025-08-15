@@ -35,7 +35,7 @@ const initializeEmailTransporter = async () => {
   }
 };
 
-// Función helper para formatear fechas de manera segura
+// Función helper para formatear fechas con zona horaria de Argentina (Buenos Aires)
 const formatDateSafe = (dateValue) => {
   console.log('🗓️ formatDateSafe: Entrada:', dateValue, typeof dateValue);
   
@@ -47,8 +47,11 @@ const formatDateSafe = (dateValue) => {
     
     let dateObj;
     
-    // Si ya es un objeto Date
-    if (dateValue instanceof Date) {
+    // Si la fecha viene en formato ISO (YYYY-MM-DD), crear fecha en zona de Argentina
+    if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      dateObj = new Date(dateValue + 'T12:00:00-03:00');
+      console.log('🗓️ formatDateSafe: Fecha ISO convertida para Argentina:', dateObj);
+    } else if (dateValue instanceof Date) {
       dateObj = dateValue;
       console.log('🗓️ formatDateSafe: Ya es Date object:', dateObj);
     } else {
@@ -63,15 +66,16 @@ const formatDateSafe = (dateValue) => {
       return 'Fecha inválida';
     }
     
-    // Formatear la fecha en español de manera consistente
-    const formatted = dateObj.toLocaleDateString('es-ES', {
+    // Formatear usando zona horaria de Argentina
+    const formatted = dateObj.toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
       weekday: 'long',
-      year: 'numeric',
+      day: 'numeric',
       month: 'long',
-      day: 'numeric'
+      year: 'numeric'
     });
     
-    console.log('✅ formatDateSafe: Resultado final:', dateValue, '->', formatted);
+    console.log('✅ formatDateSafe: Resultado final Argentina:', dateValue, '->', formatted);
     return formatted;
     
   } catch (error) {
@@ -151,33 +155,87 @@ const sendUserReservationNotification = async (reservationData) => {
               <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
                 <strong style="color: #3498db;">🆔 ${idType === 'passport' ? 'Pasaporte' : 'DNI'}:</strong> ${dni}
               </li>
-              <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
-                <strong style="color: #3498db;">💰 Monto total:</strong> ${
-                  priceInfo && priceInfo.totalAmount > 0 
-                    ? `${priceInfo.currency === 'USD' ? 'US$' : '$'}${priceInfo.totalAmount.toLocaleString()} (${priceInfo.nights} noches)`
-                    : 'A confirmar según disponibilidad'
+              ${(() => {
+                // Calcular noches
+                const checkInDateObj = new Date(checkIn);
+                const checkOutDateObj = new Date(checkOut);
+                const nights = Math.ceil((checkOutDateObj - checkInDateObj) / (1000 * 60 * 60 * 24));
+                
+                if (priceInfo && priceInfo.totalAmount > 0) {
+                  const currency = priceInfo.currency === 'USD' ? 'US$' : '$';
+                  const totalAmount = priceInfo.totalAmount;
+                  const deposit = Math.round(totalAmount * 0.3);
+                  
+                  return `
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
+                      <strong style="color: #3498db;">�️ Duración:</strong> ${nights} noches
+                    </li>
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
+                      <strong style="color: #3498db;">💰 Monto total:</strong> ${currency}${totalAmount.toLocaleString()}
+                    </li>
+                    <li style="padding: 8px 0;">
+                      <strong style="color: #3498db;">🔒 Seña requerida:</strong> ${currency}${deposit.toLocaleString()} (30% del total)
+                    </li>
+                  `;
+                } else {
+                  return `
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
+                      <strong style="color: #3498db;">🗓️ Duración:</strong> ${nights} noches
+                    </li>
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
+                      <strong style="color: #3498db;">💰 Monto total:</strong> A confirmar según disponibilidad
+                    </li>
+                    <li style="padding: 8px 0;">
+                      <strong style="color: #3498db;">🔒 Seña requerida:</strong> 30% del total para confirmar reserva
+                    </li>
+                  `;
                 }
-              </li>
-              <li style="padding: 8px 0;">
-                <strong style="color: #3498db;">🔒 Seña requerida:</strong> ${
-                  priceInfo && priceInfo.totalAmount > 0 
-                    ? `${priceInfo.currency === 'USD' ? 'US$' : '$'}${Math.round(priceInfo.totalAmount * 0.3).toLocaleString()} (30%)`
-                    : '30% del total para confirmar reserva'
-                }
-              </li>
+              })()}
             </ul>
           </div>
           
-          <div style="background-color: #e8f5e8; border-left: 4px solid #27ae60; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-            <h4 style="color: #27ae60; margin-bottom: 15px;">💳 Información de Pago</h4>
+          ${priceInfo && priceInfo.totalAmount > 0 ? `
+            <div style="background-color: #e8f5e8; border-left: 4px solid #27ae60; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+              <h4 style="color: #27ae60; margin-bottom: 15px;">💳 Información de Pago</h4>
+              <p style="margin: 10px 0; color: #2c3e50;">
+                <strong>✅ Seña requerida:</strong> ${priceInfo.currency === 'USD' ? 'US$' : '$'}${Math.round(priceInfo.totalAmount * 0.3).toLocaleString()} (30% del total) para validar la reserva.
+              </p>
+              <p style="margin: 10px 0; color: #2c3e50;">
+                <strong>📞 Próximos pasos:</strong> El administrador se pondrá en contacto contigo dentro de las próximas 24 horas para confirmar disponibilidad y proporcionarte los datos para realizar el depósito del 30%.
+              </p>
+            </div>
+          ` : `
+            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+              <h4 style="color: #856404; margin-bottom: 15px;">💳 Información de Pago</h4>
+              <p style="margin: 10px 0; color: #2c3e50;">
+                <strong>✅ Seña requerida:</strong> El 30% del monto total deberá ser abonado para validar la reserva.
+              </p>
+              <p style="margin: 10px 0; color: #2c3e50;">
+                <strong>📞 Próximo paso:</strong> Nuestro equipo revisará tu solicitud y se pondrá en contacto contigo dentro de las próximas 24 horas para confirmar disponibilidad y proporcionarte los datos para realizar el depósito del 30%.
+              </p>
+            </div>
+          `}
+          
+          <div style="background-color: #e8f8ff; border-left: 4px solid #3498db; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+            <h4 style="color: #3498db; margin-bottom: 15px;">🏦 Información de Pago</h4>
             <p style="margin: 10px 0; color: #2c3e50;">
-              <strong>✅ Seña requerida:</strong> El 30% del monto total deberá ser abonado para validar la reserva.
+              <strong>⚠️ Importante:</strong> El administrador se pondrá en contacto contigo para proporcionarte los datos bancarios para realizar la transferencia de la seña.
             </p>
             <p style="margin: 10px 0; color: #2c3e50;">
-              <strong>📞 Próximos pasos:</strong> Nos pondremos en contacto contigo para confirmar la disponibilidad y coordinar el pago de la seña.
+              Una vez recibas los datos, realiza la transferencia y envía el comprobante de pago al correo <strong>baconfort.centro@gmail.com</strong> o al WhatsApp <strong>+54 11 3002-1074</strong>.
             </p>
             <p style="margin: 10px 0; color: #2c3e50;">
-              <strong>⏱️ Tiempo de confirmación:</strong> Recibirás una respuesta dentro de las próximas 24 horas.
+              <strong>💡 Recuerda incluir tu nombre y fechas de reserva en el mensaje.</strong>
+            </p>
+          </div>
+          
+          <div style="background-color: #f0f8ff; border-left: 4px solid #17a2b8; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+            <h4 style="color: #17a2b8; margin-bottom: 15px;">📞 Próximos pasos:</h4>
+            <p style="margin: 10px 0; color: #2c3e50;">
+              El administrador te contactará con los datos para realizar la transferencia de la seña. Una vez recibidos, realiza el pago y envía el comprobante.
+            </p>
+            <p style="margin: 10px 0; color: #2c3e50;">
+              <strong>⏱️ Tiempo de respuesta:</strong> El administrador se pondrá en contacto contigo dentro de las próximas 24 horas.
             </p>
           </div>
           
@@ -187,6 +245,8 @@ const sendUserReservationNotification = async (reservationData) => {
               <p style="color: #2c3e50; margin: 0; font-style: italic;">"${message}"</p>
             </div>
           ` : ''}
+            </ul>
+          </div>
         </div>
       </div>
     `
@@ -211,6 +271,9 @@ const sendAdminReservationNotification = async (reservationData) => {
 
   const { fullName, email, phone, dni, idType, propertyName, checkIn, checkOut, guests, message, paymentInfo, priceInfo, status } = reservationData;
   
+  console.log('🔍 DEBUG EMAIL ADMIN: fullName recibido en emailNotifications =', fullName);
+  console.log('🔍 DEBUG EMAIL ADMIN: reservationData completo =', reservationData);
+  
   // Asegurar que propertyName tenga un valor
   const displayPropertyName = propertyName || 'Departamento no especificado';
   
@@ -218,10 +281,32 @@ const sendAdminReservationNotification = async (reservationData) => {
   const checkOutDate = formatDateSafe(checkOut);
 
   // Determinar el tipo de reserva y el mensaje
-  const isConfirmed = status === 'confirmed' && paymentInfo;
-  const statusText = isConfirmed ? 'CONFIRMADA CON PAGO' : 'PENDIENTE DE APROBACIÓN';
-  const statusColor = isConfirmed ? '#27ae60' : '#f39c12';
-  const statusIcon = isConfirmed ? '✅' : '⏳';
+  console.log('🔍 EMAIL DEBUG - status:', status);
+  console.log('🔍 EMAIL DEBUG - paymentInfo:', paymentInfo);
+  console.log('🔍 EMAIL DEBUG - paymentInfo.status:', paymentInfo?.status);
+  console.log('🔍 EMAIL DEBUG - paymentInfo.paymentStatus:', paymentInfo?.paymentStatus);
+  
+  const isConfirmed = status === 'confirmed' && paymentInfo && paymentInfo.paymentStatus === 'completed';
+  const isPaid = paymentInfo && paymentInfo.paymentStatus === 'completed';
+  
+  let statusText, statusColor, statusIcon, headerMessage;
+  
+  if (isConfirmed && isPaid) {
+    statusText = 'CONFIRMADA CON PAGO';
+    statusColor = '#27ae60';
+    statusIcon = '✅';
+    headerMessage = 'Pago confirmado - Reserva lista para gestionar';
+  } else if (status === 'approved' || status === 'confirmed') {
+    statusText = 'APROBADA - PAGO PENDIENTE';
+    statusColor = '#f39c12';
+    statusIcon = '💰';
+    headerMessage = 'Reserva aprobada - Esperando confirmación de pago (30% seña requerida)';
+  } else {
+    statusText = 'RECIBIDA - PENDIENTE DE APROBACIÓN';
+    statusColor = '#3498db';
+    statusIcon = '📋';
+    headerMessage = 'Nueva solicitud que requiere revisión y aprobación';
+  }
 
   const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
 
@@ -236,7 +321,7 @@ const sendAdminReservationNotification = async (reservationData) => {
             ${statusIcon} Reserva ${statusText}
           </h2>
           <p style="text-align: center; color: white; margin: 0;">
-            ${isConfirmed ? 'Pago confirmado - Reserva lista para gestionar' : 'Nueva solicitud que requiere aprobación'}
+            ${headerMessage}
           </p>
         </div>
         
@@ -258,18 +343,39 @@ const sendAdminReservationNotification = async (reservationData) => {
               <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
                 <strong style="color: #e74c3c;">Huéspedes:</strong> ${guests} persona(s)
               </li>
-              ${priceInfo && priceInfo.totalAmount > 0 ? `
-                <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
-                  <strong style="color: #e74c3c;">💰 Monto calculado:</strong> ${priceInfo.currency === 'USD' ? 'US$' : '$'}${priceInfo.totalAmount.toLocaleString()} (${priceInfo.nights} noches)
-                </li>
-                <li style="padding: 8px 0;">
-                  <strong style="color: #e74c3c;">🔒 Seña (30%):</strong> ${priceInfo.currency === 'USD' ? 'US$' : '$'}${Math.round(priceInfo.totalAmount * 0.3).toLocaleString()}
-                </li>
-              ` : `
-                <li style="padding: 8px 0;">
-                  <strong style="color: #e74c3c;">💰 Precio:</strong> A confirmar manualmente
-                </li>
-              `}
+              ${(() => {
+                // Calcular noches
+                const checkInDateObj = new Date(checkIn);
+                const checkOutDateObj = new Date(checkOut);
+                const nights = Math.ceil((checkOutDateObj - checkInDateObj) / (1000 * 60 * 60 * 24));
+                
+                if (priceInfo && priceInfo.totalAmount > 0) {
+                  const currency = priceInfo.currency === 'USD' ? 'US$' : '$';
+                  const totalAmount = priceInfo.totalAmount;
+                  const deposit = Math.round(totalAmount * 0.3);
+                  
+                  return `
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
+                      <strong style="color: #e74c3c;">�️ Duración:</strong> ${nights} noche(s)
+                    </li>
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
+                      <strong style="color: #e74c3c;">💰 Precio Total:</strong> ${currency}${totalAmount.toLocaleString()}
+                    </li>
+                    <li style="padding: 8px 0;">
+                      <strong style="color: #e74c3c;">🔒 Seña requerida (30%):</strong> ${currency}${deposit.toLocaleString()}
+                    </li>
+                  `;
+                } else {
+                  return `
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">
+                      <strong style="color: #e74c3c;">�️ Duración:</strong> ${nights} noche(s)
+                    </li>
+                    <li style="padding: 8px 0;">
+                      <strong style="color: #e74c3c;">⚠️ Precio:</strong> No especificado - confirmar manualmente
+                    </li>
+                  `;
+                }
+              })()}
             </ul>
           </div>
           

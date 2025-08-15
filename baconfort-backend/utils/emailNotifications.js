@@ -35,7 +35,7 @@ const initializeEmailTransporter = async () => {
   }
 };
 
-// Función helper para formatear fechas de manera segura
+// Función helper para formatear fechas con zona horaria de Argentina (Buenos Aires)
 const formatDateSafe = (dateValue) => {
   console.log('🗓️ formatDateSafe: Entrada:', dateValue, typeof dateValue);
   
@@ -47,8 +47,11 @@ const formatDateSafe = (dateValue) => {
     
     let dateObj;
     
-    // Si ya es un objeto Date
-    if (dateValue instanceof Date) {
+    // Si la fecha viene en formato ISO (YYYY-MM-DD), crear fecha en zona de Argentina
+    if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      dateObj = new Date(dateValue + 'T12:00:00-03:00');
+      console.log('🗓️ formatDateSafe: Fecha ISO convertida para Argentina:', dateObj);
+    } else if (dateValue instanceof Date) {
       dateObj = dateValue;
       console.log('🗓️ formatDateSafe: Ya es Date object:', dateObj);
     } else {
@@ -63,15 +66,16 @@ const formatDateSafe = (dateValue) => {
       return 'Fecha inválida';
     }
     
-    // Formatear la fecha en español de manera consistente
-    const formatted = dateObj.toLocaleDateString('es-ES', {
+    // Formatear usando zona horaria de Argentina
+    const formatted = dateObj.toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
     
-    console.log('✅ formatDateSafe: Resultado final:', dateValue, '->', formatted);
+    console.log('✅ formatDateSafe: Resultado final Argentina:', dateValue, '->', formatted);
     return formatted;
     
   } catch (error) {

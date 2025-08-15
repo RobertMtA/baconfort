@@ -3,66 +3,66 @@
  * Sistema unificado de cálculo de precios por propiedad
  */
 
-// Precios por propiedad basados en seedDatabase.js
+// Precios por propiedad basados en los valores reales de cada página
 const PROPERTY_PRICES = {
   'moldes-1680': {
-    daily: 65,
-    weekly: 350,
-    monthly: 1100,
+    daily: 70,
+    weekly: 400,
+    monthly: 1200,
     currency: 'USD'
   },
   'moldes1680': {
-    daily: 65,
-    weekly: 350,
-    monthly: 1100,
+    daily: 70,
+    weekly: 400,
+    monthly: 1200,
     currency: 'USD'
   },
   'ugarteche-2824': {
-    daily: 60,
+    daily: 45,
     weekly: 400,
-    monthly: 1500,
+    monthly: 991,
     currency: 'USD'
   },
   'ugarteche2824': {
-    daily: 60,
+    daily: 45,
     weekly: 400,
-    monthly: 1500,
+    monthly: 991,
     currency: 'USD'
   },
   'santa-fe-3770': {
     daily: 75,
     weekly: 420,
-    monthly: 1300,
+    monthly: 1000,
     currency: 'USD'
   },
   'santafe3770': {
     daily: 75,
     weekly: 420,
-    monthly: 1300,
+    monthly: 1000,
     currency: 'USD'
   },
   'dorrego-1548': {
-    daily: 70,
-    weekly: 380,
-    monthly: 1150,
+    daily: 65,
+    weekly: 390,
+    monthly: 950,
     currency: 'USD'
   },
   'dorrego1548': {
-    daily: 70,
-    weekly: 380,
-    monthly: 1150,
+    daily: 65,
+    weekly: 390,
+    monthly: 950,
     currency: 'USD'
   },
   'convencion-1994': {
     daily: 70,
-    weekly: 400,
-    monthly: 1200,
+    weekly: 410,
+    monthly: 980,
     currency: 'USD'
   },
   'convencion1994': {
     daily: 70,
-    weekly: 400,
-    monthly: 1200,
+    weekly: 410,
+    monthly: 980,
     currency: 'USD'
   }
 };
@@ -71,11 +71,39 @@ const PROPERTY_PRICES = {
 const normalizePropertyId = (propertyId) => {
   if (!propertyId) return null;
   
+  console.log('🔍 NORMALIZE: ID original:', propertyId);
+  
   // Remover espacios y convertir a minúsculas
   let normalized = propertyId.toString().toLowerCase().trim();
   
   // Remover caracteres especiales excepto guiones
   normalized = normalized.replace(/[^a-z0-9\-]/g, '');
+  
+  console.log('🔍 NORMALIZE: ID normalizado:', normalized);
+  
+  // Verificar si existe en PROPERTY_PRICES
+  if (PROPERTY_PRICES[normalized]) {
+    console.log('✅ NORMALIZE: Encontrado directamente');
+    return normalized;
+  }
+  
+  // Intentar variaciones comunes
+  const variations = [
+    normalized,
+    normalized.replace('-', ''),
+    normalized.replace(/(\d+)/, '-$1'),
+    normalized.replace(/^([a-z]+)(\d+)$/, '$1-$2')
+  ];
+  
+  for (const variation of variations) {
+    if (PROPERTY_PRICES[variation]) {
+      console.log('✅ NORMALIZE: Encontrado con variación:', variation);
+      return variation;
+    }
+  }
+  
+  console.warn('❌ NORMALIZE: No se encontró en PROPERTY_PRICES:', normalized);
+  console.warn('❌ NORMALIZE: Claves disponibles:', Object.keys(PROPERTY_PRICES));
   
   return normalized;
 };

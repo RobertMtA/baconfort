@@ -428,14 +428,14 @@ router.post('/send', authenticateToken, async (req, res) => {
       
       // Para fechas de tipo Date object, extraer componentes sin usar timezone
       if (dateString instanceof Date) {
-        const year = dateString.getFullYear();
-        const month = String(dateString.getMonth() + 1).padStart(2, '0');
-        const day = String(dateString.getDate()).padStart(2, '0');
-        console.log('🗓️ DEBUG: Fecha parseada como Date:', { year, month, day });
+        const year = dateString.getUTCFullYear();
+        const month = String(dateString.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(dateString.getUTCDate()).padStart(2, '0');
+        console.log('🗓️ DEBUG: Fecha parseada como Date UTC:', { year, month, day });
         return `${day}/${month}/${year}`;
       }
       
-      // Para otros formatos de string, intentar parsear
+      // Para otros formatos de string, intentar parsear con UTC
       try {
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return 'Fecha inválida';
@@ -748,13 +748,16 @@ router.patch('/:inquiryId/status', authenticateToken, async (req, res) => {
         return `${day}/${month}/${year}`;
       }
       
-      // Para otros formatos, usar Date pero agregando timezone offset
+      // Para otros formatos, usar Date pero con UTC para evitar timezone issues
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Fecha inválida';
       
-      // Agregar offset de timezone para evitar cambios de día
-      const offsetDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-      return offsetDate.toLocaleDateString('es-ES');
+      // Usar UTC para evitar cambios de día por timezone
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const year = date.getUTCFullYear();
+      
+      return `${day}/${month}/${year}`;
     };
 
     // Enviar email al cliente con la respuesta
