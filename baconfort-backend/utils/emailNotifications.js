@@ -283,12 +283,6 @@ const sendAdminReservationNotification = async (reservationData) => {
     }
   }
 
-  // DEBUG: Verificar priceInfo
-  console.log('🔍 EMAIL DEBUG - priceInfo recibido:', JSON.stringify(priceInfo, null, 2));
-  console.log('🔍 EMAIL DEBUG - priceInfo existe:', !!priceInfo);
-  console.log('🔍 EMAIL DEBUG - priceInfo.totalAmount:', priceInfo?.totalAmount);
-  console.log('🔍 EMAIL DEBUG - priceInfo.currency:', priceInfo?.currency);
-
   // Determinar el tipo de reserva y el mensaje para ADMIN
   // LÓGICA SIMPLIFICADA: Solo mostrar CONFIRMADA CON PAGO si explícitamente está pagado
   let statusText, statusColor, statusIcon, headerMessage;

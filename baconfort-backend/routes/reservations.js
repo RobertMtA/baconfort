@@ -132,7 +132,8 @@ router.post('/', authenticateToken, async (req, res) => {
       idType: idType || 'dni',
       message,
       status: status || initialStatus,
-      paymentInfo: finalPaymentInfo
+      paymentInfo: finalPaymentInfo,
+      priceInfo: completePriceInfo // AGREGAR información de precio calculada
     });
 
     await reservation.save();

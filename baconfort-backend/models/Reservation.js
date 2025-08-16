@@ -148,6 +148,45 @@ const reservationSchema = new mongoose.Schema({
     }
   },
   
+  // Información de precio calculada
+  priceInfo: {
+    totalAmount: {
+      type: Number,
+      default: null
+    },
+    currency: {
+      type: String,
+      default: 'USD'
+    },
+    nights: {
+      type: Number,
+      default: null
+    },
+    breakdown: {
+      type: {
+        type: String,
+        enum: ['daily', 'weekly', 'monthly', null],
+        default: null
+      },
+      weeks: Number,
+      weeklyPrice: Number,
+      weeklyTotal: Number,
+      months: Number,
+      monthlyPrice: Number,
+      monthlyTotal: Number,
+      extraDays: Number,
+      dailyPrice: Number,
+      extraDaysTotal: Number,
+      dailyTotal: Number
+    },
+    propertyPrices: {
+      daily: Number,
+      weekly: Number,
+      monthly: Number,
+      currency: String
+    }
+  },
+  
   // Fechas del sistema
   createdAt: {
     type: Date,
