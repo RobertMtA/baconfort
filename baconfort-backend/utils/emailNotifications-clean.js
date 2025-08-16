@@ -282,13 +282,16 @@ const sendAdminReservationNotification = async (reservationData) => {
 
   // Determinar el tipo de reserva y el mensaje para ADMIN
   console.log('🔍 EMAIL DEBUG - status:', status);
-  console.log('🔍 EMAIL DEBUG - paymentInfo:', paymentInfo);
+  console.log('🔍 EMAIL DEBUG - paymentInfo:', JSON.stringify(paymentInfo, null, 2));
   console.log('🔍 EMAIL DEBUG - paymentInfo.status:', paymentInfo?.status);
   console.log('🔍 EMAIL DEBUG - paymentInfo.paymentStatus:', paymentInfo?.paymentStatus);
   
   // Para el admin, una reserva solo está "CONFIRMADA CON PAGO" si realmente se completó el pago
   const isActuallyPaid = paymentInfo && paymentInfo.paymentStatus === 'approved' && paymentInfo.status === 'completed';
   const isConfirmedWithPayment = status === 'confirmed' && isActuallyPaid;
+  
+  console.log('🔍 EMAIL DEBUG - isActuallyPaid:', isActuallyPaid);
+  console.log('🔍 EMAIL DEBUG - isConfirmedWithPayment:', isConfirmedWithPayment);
   
   let statusText, statusColor, statusIcon, headerMessage;
   
@@ -309,6 +312,8 @@ const sendAdminReservationNotification = async (reservationData) => {
     statusIcon = '⏳';
     headerMessage = 'Nueva solicitud que requiere revisión y aprobación';
   }
+  
+  console.log('🔍 EMAIL DEBUG - Final status:', statusText, statusIcon);
 
   const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
 
