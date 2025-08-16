@@ -284,21 +284,14 @@ const sendAdminReservationNotification = async (reservationData) => {
   }
 
   // Determinar el tipo de reserva y el mensaje para ADMIN
-  console.log('🔍 EMAIL DEBUG (emailNotifications.js) - status:', status);
-  console.log('🔍 EMAIL DEBUG (emailNotifications.js) - paymentInfo:', JSON.stringify(paymentInfo, null, 2));
-  console.log('🔍 EMAIL DEBUG (emailNotifications.js) - paymentInfo.status:', paymentInfo?.status);
-  console.log('🔍 EMAIL DEBUG (emailNotifications.js) - paymentInfo.paymentStatus:', paymentInfo?.paymentStatus);
-  
-  // Para el admin, una reserva solo está "CONFIRMADA CON PAGO" si realmente se completó el pago
-  const isActuallyPaid = paymentInfo && paymentInfo.paymentStatus === 'approved' && paymentInfo.status === 'completed';
-  const isConfirmedWithPayment = status === 'confirmed' && isActuallyPaid;
-  
-  console.log('🔍 EMAIL DEBUG (emailNotifications.js) - isActuallyPaid:', isActuallyPaid);
-  console.log('🔍 EMAIL DEBUG (emailNotifications.js) - isConfirmedWithPayment:', isConfirmedWithPayment);
-  
+  // LÓGICA SIMPLIFICADA: Solo mostrar CONFIRMADA CON PAGO si explícitamente está pagado
   let statusText, statusColor, statusIcon, headerMessage;
   
-  if (isConfirmedWithPayment) {
+  // Condiciones muy estrictas para CONFIRMADA CON PAGO
+  if (status === 'confirmed' && 
+      paymentInfo && 
+      paymentInfo.paymentStatus === 'approved' && 
+      paymentInfo.status === 'completed') {
     statusText = 'CONFIRMADA CON PAGO';
     statusColor = '#27ae60';
     statusIcon = '✅';
@@ -309,14 +302,12 @@ const sendAdminReservationNotification = async (reservationData) => {
     statusIcon = '💰';
     headerMessage = 'Reserva aprobada - Esperando confirmación de pago';
   } else {
-    // Para nuevas reservas o reservas pendientes, siempre mostrar como pendiente de confirmación
+    // TODOS LOS DEMÁS CASOS (incluyendo nuevas reservas)
     statusText = 'PENDIENTE DE CONFIRMACIÓN';
     statusColor = '#3498db';
     statusIcon = '⏳';
     headerMessage = 'Nueva solicitud que requiere revisión y aprobación';
   }
-  
-  console.log('🔍 EMAIL DEBUG (emailNotifications.js) - Final status:', statusText, statusIcon);
 
   const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
 
