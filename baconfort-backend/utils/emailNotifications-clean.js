@@ -280,31 +280,33 @@ const sendAdminReservationNotification = async (reservationData) => {
   const checkInDate = formatDateSafe(checkIn);
   const checkOutDate = formatDateSafe(checkOut);
 
-  // Determinar el tipo de reserva y el mensaje
+  // Determinar el tipo de reserva y el mensaje para ADMIN
   console.log('🔍 EMAIL DEBUG - status:', status);
   console.log('🔍 EMAIL DEBUG - paymentInfo:', paymentInfo);
   console.log('🔍 EMAIL DEBUG - paymentInfo.status:', paymentInfo?.status);
   console.log('🔍 EMAIL DEBUG - paymentInfo.paymentStatus:', paymentInfo?.paymentStatus);
   
-  const isConfirmed = status === 'confirmed' && paymentInfo && paymentInfo.paymentStatus === 'completed';
-  const isPaid = paymentInfo && paymentInfo.paymentStatus === 'completed';
+  // Para el admin, una reserva solo está "CONFIRMADA CON PAGO" si realmente se completó el pago
+  const isActuallyPaid = paymentInfo && paymentInfo.paymentStatus === 'approved' && paymentInfo.status === 'completed';
+  const isConfirmedWithPayment = status === 'confirmed' && isActuallyPaid;
   
   let statusText, statusColor, statusIcon, headerMessage;
   
-  if (isConfirmed && isPaid) {
+  if (isConfirmedWithPayment) {
     statusText = 'CONFIRMADA CON PAGO';
     statusColor = '#27ae60';
     statusIcon = '✅';
     headerMessage = 'Pago confirmado - Reserva lista para gestionar';
-  } else if (status === 'approved' || status === 'confirmed') {
+  } else if (status === 'approved' || status === 'payment_pending') {
     statusText = 'APROBADA - PAGO PENDIENTE';
     statusColor = '#f39c12';
     statusIcon = '💰';
     headerMessage = 'Reserva aprobada - Esperando confirmación de pago (30% seña requerida)';
   } else {
-    statusText = 'RECIBIDA - PENDIENTE DE APROBACIÓN';
+    // Para nuevas reservas o reservas pendientes, siempre mostrar como pendiente de confirmación
+    statusText = 'PENDIENTE DE CONFIRMACIÓN';
     statusColor = '#3498db';
-    statusIcon = '📋';
+    statusIcon = '⏳';
     headerMessage = 'Nueva solicitud que requiere revisión y aprobación';
   }
 

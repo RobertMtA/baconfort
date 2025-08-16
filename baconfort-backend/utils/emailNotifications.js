@@ -283,11 +283,30 @@ const sendAdminReservationNotification = async (reservationData) => {
     }
   }
 
-  // Determinar el tipo de reserva y el mensaje
-  const isConfirmed = status === 'confirmed' && paymentInfo;
-  const statusText = isConfirmed ? 'CONFIRMADA CON PAGO' : 'PENDIENTE DE APROBACIÓN';
-  const statusColor = isConfirmed ? '#27ae60' : '#f39c12';
-  const statusIcon = isConfirmed ? '✅' : '⏳';
+  // Determinar el tipo de reserva y el mensaje para ADMIN
+  // Para el admin, una reserva solo está "CONFIRMADA CON PAGO" si realmente se completó el pago
+  const isActuallyPaid = paymentInfo && paymentInfo.paymentStatus === 'approved' && paymentInfo.status === 'completed';
+  const isConfirmedWithPayment = status === 'confirmed' && isActuallyPaid;
+  
+  let statusText, statusColor, statusIcon, headerMessage;
+  
+  if (isConfirmedWithPayment) {
+    statusText = 'CONFIRMADA CON PAGO';
+    statusColor = '#27ae60';
+    statusIcon = '✅';
+    headerMessage = 'Pago confirmado - Reserva lista para gestionar';
+  } else if (status === 'approved' || status === 'payment_pending') {
+    statusText = 'APROBADA - PAGO PENDIENTE';
+    statusColor = '#f39c12';
+    statusIcon = '💰';
+    headerMessage = 'Reserva aprobada - Esperando confirmación de pago';
+  } else {
+    // Para nuevas reservas o reservas pendientes, siempre mostrar como pendiente de confirmación
+    statusText = 'PENDIENTE DE CONFIRMACIÓN';
+    statusColor = '#3498db';
+    statusIcon = '⏳';
+    headerMessage = 'Nueva solicitud que requiere revisión y aprobación';
+  }
 
   const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
 
@@ -302,7 +321,7 @@ const sendAdminReservationNotification = async (reservationData) => {
             ${statusIcon} Reserva ${statusText}
           </h2>
           <p style="text-align: center; color: white; margin: 0;">
-            ${isConfirmed ? 'Pago confirmado - Reserva lista para gestionar' : 'Nueva solicitud que requiere aprobación'}
+            ${headerMessage}
           </p>
         </div>
         
