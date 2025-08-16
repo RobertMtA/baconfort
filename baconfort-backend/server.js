@@ -2170,6 +2170,24 @@ app.use('/api/*', (req, res) => {
   });
 });
 
+// Servir frontend desde public directory (alternativa a Firebase)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Para rutas del frontend (React Router), servir index.html
+app.get('*', (req, res) => {
+  // Solo servir index.html para rutas que NO empiecen con /api
+  if (!req.path.startsWith('/api')) {
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    if (require('fs').existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).json({ error: 'Frontend not available' });
+    }
+  } else {
+    res.status(404).json({ error: 'API endpoint not found' });
+  }
+});
+
 // Global error handler
 app.use((error, req, res, next) => {
   console.error('❌ GLOBAL ERROR HANDLER:', error);
