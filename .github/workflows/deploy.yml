@@ -1,4 +1,4 @@
-# Workflow para desplegar automáticamente a GitHub Pages
+# Simple workflow for GitHub Pages deployment
 
 name: Deploy to GitHub Pages
 
@@ -6,74 +6,52 @@ on:
   push:
     branches:
       - main
-      - master
 
-# Permisos necesarios para el despliegue
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - name: Checkout 🛎️
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js 📦
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './baconfort-react/package-lock.json'
 
-      - name: Verificar estructura de archivos 📋
-        run: |
-          echo "Verificando estructura del proyecto..."
-          ls -la
-          echo "Verificando directorio baconfort-react..."
-          ls -la baconfort-react/
-          echo "Verificando archivos importantes..."
-          test -f baconfort-react/index.html && echo "✅ index.html encontrado" || echo "❌ index.html NO encontrado"
-          test -f baconfort-react/package.json && echo "✅ package.json encontrado" || echo "❌ package.json NO encontrado"
-          test -f baconfort-react/vite.config.js && echo "✅ vite.config.js encontrado" || echo "❌ vite.config.js NO encontrado"
-          test -f baconfort-react/package-lock.json && echo "✅ package-lock.json encontrado" || echo "❌ package-lock.json NO encontrado"
+      - name: Install dependencies
+        working-directory: ./baconfort-react
+        run: npm ci
 
-      - name: Cache dependencies 💾
-        uses: actions/cache@v3
+      - name: Build
+        working-directory: ./baconfort-react
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
         with:
-          path: |
-            baconfort-react/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('baconfort-react/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          path: './baconfort-react/dist'
 
-      - name: Instalar dependencias 🔧
-        run: |
-          cd baconfort-react
-          npm ci --prefer-offline --no-audit --no-fund --silent
-          echo "Dependencias instaladas correctamente"
-
-      - name: Construir el proyecto 🏗️
-        run: |
-          cd baconfort-react
-          export NODE_OPTIONS="--max-old-space-size=4096"
-          npm run build
-        env:
-          NODE_ENV: production
-          CI: true
-
-      - name: Verificar build 🔍
-        run: |
-          echo "Verificando resultado del build..."
-          ls -la baconfort-react/dist/
-          test -f baconfort-react/dist/index.html && echo "✅ Build exitoso" || (echo "❌ Build falló" && exit 1)
-          echo "Tamaño del directorio dist:"
-          du -sh baconfort-react/dist/
-
-      - name: Desplegar a GitHub Pages 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: baconfort-react/dist
-          branch: gh-pages
-          clean: true
-          single-commit: true
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
