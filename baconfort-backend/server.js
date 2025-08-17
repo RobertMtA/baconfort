@@ -26,6 +26,7 @@ const PORT = process.env.PORT || 5004;
 console.log('🚀 BACONFORT Server Starting...');
 console.log('📊 Port:', PORT);
 console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
+console.log('⏰ Deploy timestamp:', new Date().toISOString());
 console.log('📧 EMAIL_USER:', process.env.EMAIL_USER ? 'CONFIGURADO' : 'NO CONFIGURADO');
 console.log('📧 EMAIL_APP_PASSWORD:', process.env.EMAIL_APP_PASSWORD ? 'CONFIGURADO' : 'NO CONFIGURADO');
 console.log('📧 ADMIN_EMAIL:', process.env.ADMIN_EMAIL ? 'CONFIGURADO' : 'NO CONFIGURADO');
