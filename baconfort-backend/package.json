@@ -4,7 +4,9 @@
   "main": "server.js",
   "scripts": {
     "start": "NODE_OPTIONS='--no-deprecation' node server.js",
+    "start:win": "set NODE_OPTIONS=--no-deprecation && node server.js",
     "dev": "nodemon server.js",
+    "dev:win": "set NODE_OPTIONS=--no-deprecation && nodemon server.js",
     "build": "echo 'No build needed for Node.js server'",
     "postinstall": "echo 'Dependencies installed successfully'",
     "railway": "NODE_OPTIONS='--no-deprecation' node server.js"
