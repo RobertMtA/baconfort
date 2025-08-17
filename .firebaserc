@@ -3,6 +3,14 @@
     "default": "confort-ba",
     "confort-ba": "confort-ba"
   },
-  "targets": {},
+  "targets": {
+    "confort-ba": {
+      "hosting": {
+        "baconfort": [
+          "baconfort"
+        ]
+      }
+    }
+  },
   "etags": {}
 }
