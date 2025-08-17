@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "cd baconfort-react && npm run dev",
-    "build": "cd baconfort-react && npx vite build",
+    "build": "cd baconfort-react && npm run build",
     "preview": "cd baconfort-react && npm run preview",
     "lint": "cd baconfort-react && npm run lint",
     "install-deps": "cd baconfort-react && npm install",
