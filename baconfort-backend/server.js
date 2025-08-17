@@ -224,6 +224,11 @@ const connectDB = async () => {
 let emailTransporter = null;
 
 const setupEmailTransporter = () => {
+  // TEMPORAL: Email deshabilitado para deployment en Railway
+  console.log('⚠️ Email transporter temporalmente deshabilitado para Railway deployment');
+  emailTransporter = null;
+  return;
+  
   if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
     console.log('⚠️ Email credentials not provided, running in demo mode');
     return;
