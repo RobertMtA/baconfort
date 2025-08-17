@@ -23,8 +23,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: baconfort-react/package-lock.json
+
+      - name: Cache npm dependencies 💾
+        uses: actions/cache@v3
+        with:
+          path: |
+            baconfort-react/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('baconfort-react/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Verificar estructura de archivos 📋
         run: |
@@ -36,6 +44,7 @@ jobs:
           test -f baconfort-react/index.html && echo "✅ index.html encontrado" || echo "❌ index.html NO encontrado"
           test -f baconfort-react/package.json && echo "✅ package.json encontrado" || echo "❌ package.json NO encontrado"
           test -f baconfort-react/vite.config.js && echo "✅ vite.config.js encontrado" || echo "❌ vite.config.js NO encontrado"
+          test -f baconfort-react/package-lock.json && echo "✅ package-lock.json encontrado" || echo "❌ package-lock.json NO encontrado"
 
       - name: Instalar dependencias 🔧
         run: |
