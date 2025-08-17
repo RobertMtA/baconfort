@@ -15,6 +15,7 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
@@ -23,16 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
-      - name: Cache npm dependencies 💾
-        uses: actions/cache@v3
-        with:
-          path: |
-            baconfort-react/node_modules
-            ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('baconfort-react/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Verificar estructura de archivos 📋
         run: |
@@ -46,23 +38,37 @@ jobs:
           test -f baconfort-react/vite.config.js && echo "✅ vite.config.js encontrado" || echo "❌ vite.config.js NO encontrado"
           test -f baconfort-react/package-lock.json && echo "✅ package-lock.json encontrado" || echo "❌ package-lock.json NO encontrado"
 
+      - name: Cache dependencies 💾
+        uses: actions/cache@v3
+        with:
+          path: |
+            baconfort-react/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('baconfort-react/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Instalar dependencias 🔧
         run: |
           cd baconfort-react
-          npm ci --silent
+          npm ci --prefer-offline --no-audit --no-fund --silent
+          echo "Dependencias instaladas correctamente"
 
       - name: Construir el proyecto 🏗️
         run: |
           cd baconfort-react
+          export NODE_OPTIONS="--max-old-space-size=4096"
           npm run build
         env:
           NODE_ENV: production
+          CI: true
 
       - name: Verificar build 🔍
         run: |
           echo "Verificando resultado del build..."
           ls -la baconfort-react/dist/
-          test -f baconfort-react/dist/index.html && echo "✅ Build exitoso" || echo "❌ Build falló"
+          test -f baconfort-react/dist/index.html && echo "✅ Build exitoso" || (echo "❌ Build falló" && exit 1)
+          echo "Tamaño del directorio dist:"
+          du -sh baconfort-react/dist/
 
       - name: Desplegar a GitHub Pages 🚀
         uses: JamesIves/github-pages-deploy-action@v4
@@ -70,3 +76,4 @@ jobs:
           folder: baconfort-react/dist
           branch: gh-pages
           clean: true
+          single-commit: true

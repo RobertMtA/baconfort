@@ -1,0 +1,36 @@
+# Workflow simple para desplegar a GitHub Pages (fallback)
+
+name: Simple Deploy to GitHub Pages
+
+on:
+  workflow_dispatch: # Permite ejecutar manualmente
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install and Build
+        run: |
+          cd baconfort-react
+          npm install --silent
+          npm run build
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: baconfort-react/dist
+          branch: gh-pages
+          clean: true
+          single-commit: true
