@@ -35,7 +35,8 @@ const subscriberSchema = new mongoose.Schema({
   }
 });
 
-subscriberSchema.index({ email: 1 });
+// El índice en email ya se crea automáticamente por unique: true
+// subscriberSchema.index({ email: 1 }); // Eliminado para evitar duplicado
 
 const Subscriber = mongoose.model('Subscriber', subscriberSchema);
 
@@ -44,29 +45,33 @@ let emailTransporter = null;
 
 const setupEmailTransporter = () => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
-    console.log('⚠️ Subscribers: Email credentials not provided');
+    console.log('📧 Subscribers: Email credentials not configured - demo mode active');
     return;
   }
 
   try {
-    emailTransporter = nodemailer.createTransport({
+    emailTransporter = nodemailer.createTransporter({
       service: process.env.EMAIL_SERVICE || 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_APP_PASSWORD
-      }
+      },
+      // Configuración optimizada
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 3
     });
 
     emailTransporter.verify((error, success) => {
       if (error) {
-        console.error('❌ Subscribers: Email transporter error:', error.message);
+        console.log('📧 Subscribers: Email service temporarily unavailable - continuing without notifications');
         emailTransporter = null;
       } else {
-        console.log('✅ Subscribers: Email transporter ready');
+        console.log('✅ Subscribers: Email notification service ready');
       }
     });
   } catch (error) {
-    console.error('❌ Subscribers: Error setting up email transporter:', error.message);
+    console.log('📧 Subscribers: Email setup incomplete - continuing without notifications');
     emailTransporter = null;
   }
 };

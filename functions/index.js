@@ -23,8 +23,8 @@ const corsOptions = {
     'http://localhost:3001',
     'http://localhost:5173',
     'https://baconfort.netlify.app',
-
-    'https://confort-ba.web.app'
+    'https://confort-ba.web.app',
+    'https://baconfort.web.app'
   ],
   credentials: true
 };

@@ -1,0 +1,11 @@
+[phases.build]
+cmds = ["npm ci --omit=dev --silent"]
+
+[phases.start]
+cmd = "NODE_ENV=production npm start"
+
+[variables]
+NODE_ENV = "production"
+NPM_CONFIG_LOGLEVEL = "error"
+NPM_CONFIG_FUND = "false"
+NPM_CONFIG_AUDIT = "false"

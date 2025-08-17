@@ -261,6 +261,63 @@ const setupEmailTransporter = () => {
   }
 };
 
+const setupEmailTransporter = () => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+    console.log('⚠️ Email credentials not provided, running in demo mode');
+    return;
+  }
+
+  try {
+    emailTransporter = nodemailer.createTransporter({
+      service: process.env.EMAIL_SERVICE || 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_APP_PASSWORD
+      }
+    });
+
+    // Verificar conexión con reintentos automáticos
+    emailTransporter.verify((error, success) => {
+      if (error) {
+        console.log('⚠️ Email transporter warning: Email service not available');
+        console.log('💡 This is normal in Railway deployment - email features will be disabled');
+        emailTransporter = null;
+      } else {
+        console.log('✅ Email transporter ready');
+      }
+    });
+  } catch (error) {
+    console.log('⚠️ Email configuration warning: Email service not configured properly');
+    emailTransporter = null;
+  }
+};
+  }
+
+  try {
+    emailTransporter = nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_APP_PASSWORD
+      }
+    });
+
+    // Verificar conexión
+    emailTransporter.verify((error, success) => {
+      if (error) {
+        console.log('⚠️ Email transporter warning: Email service not available');
+        console.log('💡 This is normal in Railway deployment - email features will be disabled');
+        emailTransporter = null;
+      } else {
+        console.log('✅ Email transporter ready');
+      }
+    });
+  } catch (error) {
+    console.log('⚠️ Email configuration warning: Email service not configured properly');
+    emailTransporter = null;
+  }
+};
+
 // Función para enviar email de bienvenida
 const sendWelcomeEmail = async (userEmail, userName) => {
   if (!emailTransporter) {

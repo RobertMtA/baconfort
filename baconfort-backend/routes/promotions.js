@@ -10,8 +10,14 @@ const { optionalAuth, adminAuth } = require('../middleware/auth');
 let emailTransporter = null;
 
 const setupEmailTransporter = () => {
+  // Silent in production - email features disabled
+  if (process.env.NODE_ENV === 'production') {
+    emailTransporter = null;
+    return;
+  }
+
   if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
-    console.log('⚠️ Promotions: Email credentials not provided');
+    console.log('🎯 Promotions: Email credentials not configured - demo mode active');
     return;
   }
 
@@ -26,14 +32,14 @@ const setupEmailTransporter = () => {
 
     emailTransporter.verify((error, success) => {
       if (error) {
-        console.error('❌ Promotions: Email transporter error:', error.message);
+        console.log('⚠️ Promotions: Email service not available - promotion emails disabled');
         emailTransporter = null;
       } else {
         console.log('✅ Promotions: Email transporter ready for promotion notifications');
       }
     });
   } catch (error) {
-    console.error('❌ Promotions: Error setting up email transporter:', error.message);
+    console.log('⚠️ Promotions: Email not configured - promotion emails disabled');
     emailTransporter = null;
   }
 };

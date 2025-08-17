@@ -17,27 +17,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configurar Node.js 📦
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
-          # Deshabilitamos la caché para evitar problemas con las rutas
-          # cache: 'npm'
-          # cache-dependency-path: './baconfort-react/package-lock.json'
+          cache: 'npm'
+          cache-dependency-path: baconfort-react/package-lock.json
+
+      - name: Verificar estructura de archivos 📋
+        run: |
+          echo "Verificando estructura del proyecto..."
+          ls -la
+          echo "Verificando directorio baconfort-react..."
+          ls -la baconfort-react/
+          echo "Verificando archivos importantes..."
+          test -f baconfort-react/index.html && echo "✅ index.html encontrado" || echo "❌ index.html NO encontrado"
+          test -f baconfort-react/package.json && echo "✅ package.json encontrado" || echo "❌ package.json NO encontrado"
+          test -f baconfort-react/vite.config.js && echo "✅ vite.config.js encontrado" || echo "❌ vite.config.js NO encontrado"
 
       - name: Instalar dependencias 🔧
         run: |
           cd baconfort-react
-          npm ci
+          npm ci --silent
 
       - name: Construir el proyecto 🏗️
         run: |
           cd baconfort-react
-          npx vite build
+          npm run build
         env:
           NODE_ENV: production
+
+      - name: Verificar build 🔍
+        run: |
+          echo "Verificando resultado del build..."
+          ls -la baconfort-react/dist/
+          test -f baconfort-react/dist/index.html && echo "✅ Build exitoso" || echo "❌ Build falló"
 
       - name: Desplegar a GitHub Pages 🚀
         uses: JamesIves/github-pages-deploy-action@v4
